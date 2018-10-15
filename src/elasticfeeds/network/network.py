@@ -1,20 +1,17 @@
 import datetime
-from elasticfeeds.exceptions import KeyWordError, ExtraTypeError, WeightTypeError, IDError, LinkedTypeError
+from elasticfeeds.exceptions import KeyWordError, ExtraTypeError, WeightTypeError, IDError, LinkedTypeError, \
+    LinkedActivityObjectError
+from .activity import LinkedActivity
 
 __all__ = ['Link']
 
 
 class Link(object):
-    def __init__(self, actor_id, feed_component_id, linked=datetime.datetime.now(), link_type='follow',
-                 feed_component_class='actor', feed_component_type='person', link_weight=1, extra=None):
+    def __init__(self, actor_id, linked_activity, linked=datetime.datetime.now(), link_type='follow', link_weight=1,
+                 extra=None):
         temp = actor_id.split(" ")
         if len(temp) == 1:
             self._actor_id = actor_id
-        else:
-            raise IDError()
-        temp = feed_component_id.split(" ")
-        if len(temp) == 1:
-            self._feed_component_id = feed_component_id
         else:
             raise IDError()
         if not isinstance(linked, datetime.datetime):
@@ -23,12 +20,9 @@ class Link(object):
         if not link_type.isalpha():
             raise KeyWordError(link_type)
         self._link_type = link_type
-        if not feed_component_class.isalpha():
-            raise KeyWordError(feed_component_class)
-        self._feed_component_class = feed_component_class
-        if not feed_component_type.isalpha():
-            raise KeyWordError(feed_component_type)
-        self._feed_component_type = feed_component_type
+        if not isinstance(linked_activity, LinkedActivity):
+            raise LinkedActivityObjectError
+        self._linked_activity = linked_activity
         if extra is not None:
             if not isinstance(extra, dict):
                 raise ExtraTypeError()
@@ -51,16 +45,14 @@ class Link(object):
             raise IDError()
 
     @property
-    def feed_component_id(self):
-        return self._feed_component_id
+    def linked_activity(self):
+        return self._linked_activity
 
-    @feed_component_id.setter
-    def feed_component_id(self, value):
-        temp = value.split(" ")
-        if len(temp) == 1:
-            self._feed_component_id = value
-        else:
-            raise IDError()
+    @linked_activity.setter
+    def linked_activity(self, value):
+        if not isinstance(value, LinkedActivity):
+            raise LinkedActivityObjectError
+        self._linked_activity = value
 
     @property
     def linked(self):
@@ -81,26 +73,6 @@ class Link(object):
         if not value.isalpha():
             raise KeyWordError(value)
         self._link_type = value
-
-    @property
-    def feed_component_class(self):
-        return self._feed_component_class
-
-    @feed_component_class.setter
-    def feed_component_class(self, value):
-        if not value.isalpha():
-            raise KeyWordError(value)
-        self._feed_component_class = value
-
-    @property
-    def feed_component_type(self):
-        return self._feed_component_type
-
-    @feed_component_type.setter
-    def feed_component_type(self, value):
-        if not value.isalpha():
-            raise KeyWordError(value)
-        self._feed_component_type = value
 
     @property
     def extra(self):
@@ -124,24 +96,20 @@ class Link(object):
         else:
             raise WeightTypeError()
 
-    def network_link(self):
-        _json = {
+    def get_dict(self):
+        _dict = {
             "linked": self._linked,
             "actor_id": self._actor_id,
             "link_type": self._link_type,
-            "feed_component_class": self._feed_component_class,
-            "feed_component": {
-                'id': self._feed_component_id,
-                'type': self._feed_component_type
-            },
+            "linked_activity": self.linked_activity.get_dict(),
             "link_weight": self._link_weight,
         }
         if self._extra is not None:
-            _json["extra"] = self._extra
-        return _json
+            _dict["extra"] = self._extra
+        return _dict
 
-    def search_for_link(self):
-        _json = {
+    def get_search_dict(self):
+        _dict = {
             "query": {
                 "bool": {
                     "must": [
@@ -157,21 +125,21 @@ class Link(object):
                         },
                         {
                             "term": {
-                                "feed_component_class": self.feed_component_class
+                                "linked_activity.class": self.linked_activity.activity_class
                             }
                         },
                         {
                             "term": {
-                                "feed_component.type": self.feed_component_type
+                                "linked_activity.type": self.linked_activity.activity_type
                             }
                         },
                         {
                             "term": {
-                                "feed_component.id": self.feed_component_id
+                                "linked_activity.id": self.linked_activity.activity_id
                             }
                         }
                     ]
                 }
             }
         }
-        return _json
+        return _dict

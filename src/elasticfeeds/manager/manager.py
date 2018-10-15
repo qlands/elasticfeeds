@@ -1,9 +1,9 @@
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import RequestError
-from elasticfeeds.exceptions import LinkObjectError, LinkExistError
+from elasticfeeds.exceptions import LinkObjectError, LinkExistError, ActivityObjectError
 from elasticfeeds.network import Link
+from elasticfeeds.activity import Activity
 import uuid
-import pprint
 
 __all__ = ['Manager']
 
@@ -207,11 +207,11 @@ def _get_network_index_definition(number_of_shards, number_of_replicas):
                     "link_type": {
                         "type": "keyword"
                     },
-                    "feed_component_class": {
-                        "type": "keyword"
-                    },
-                    "feed_component": {
+                    "linked_activity": {
                         "properties": {
+                            "class": {
+                                "type": "keyword"
+                            },
                             "id": {
                                 "type": "keyword"
                             },
@@ -350,11 +350,16 @@ class Manager(object):
         return False
 
     def link_network_exists(self, link_object):
+        """
+        Check whether a link object already exists in the network index
+        :param link_object: The link object to check if exists
+        :return: True if exists otherwise False
+        """
         if not isinstance(link_object, Link):
             raise LinkObjectError()
         connection = self.create_connection()
         if connection is not None:
-            res = connection.search(index=self.network_index, body=link_object.search_for_link())
+            res = connection.search(index=self.network_index, body=link_object.get_search_dict())
             if res['hits']['total'] > 0:
                 return True
         else:
@@ -362,15 +367,38 @@ class Manager(object):
         return False
 
     def add_network_link(self, link_object):
+        """
+        Adds a link to the network index
+        :param link_object: The Link object being added to the index
+        :return: The unique ID give to the link
+        """
         if not isinstance(link_object, Link):
             raise LinkObjectError()
         if not self.link_network_exists(link_object):
             connection = self.create_connection()
             if connection is not None:
-                connection.index(index=self.network_index, doc_type='link', id=str(uuid.uuid4()),
-                                 body=link_object.network_link())
+                unique_id = str(uuid.uuid4())
+                connection.index(index=self.network_index, doc_type='link', id=unique_id,
+                                 body=link_object.get_dict())
+                return unique_id
             else:
                 raise RequestError("Cannot connect to ElasticSearch")
         else:
             raise LinkExistError()
 
+    def add_activity_feed(self, activity_object):
+        """
+        Adds an activity to the feed index
+        :param activity_object: The activity object being added to the index
+        :return: The unique ID given to the activity
+        """
+        if not isinstance(activity_object, Activity):
+            raise ActivityObjectError()
+        connection = self.create_connection()
+        if connection is not None:
+            unique_id = str(uuid.uuid4())
+            connection.index(index=self.feed_index, doc_type='activity', id=unique_id,
+                             body=activity_object.get_dict())
+            return unique_id
+        else:
+            raise RequestError("Cannot connect to ElasticSearch")
