@@ -9,7 +9,6 @@ import datetime
 import time
 
 
-
 def test_manager():
     now = datetime.datetime.now()
     tst_manager = Manager('testfeeds', 'testnerwork', delete_network_if_exists=True, delete_feeds_if_exists=True)
@@ -32,6 +31,10 @@ def test_manager():
 
     # Adds the network link
     tst_manager.add_network_link(tst_link)
+
+    # Carlos follow Eduardo. Test of convenience function
+    tst_manager.follow('cquiros', 'edoquiros')
+
     # --------------------------- Adds some activity feeds ------------------------------
 
     # An actor called cquiros adds project A
@@ -45,7 +48,6 @@ def test_manager():
     # Adds the activity
     tst_manager.add_activity_feed(tst_activity)
 
-
     # cquiros adds project B
 
     # Creates an object
@@ -54,7 +56,6 @@ def test_manager():
     tst_activity = Activity('add', tst_actor, tst_object, published=now + datetime.timedelta(minutes=24))
     # Adds the activity
     tst_manager.add_activity_feed(tst_activity)
-
 
     # cquiros adds Form 1 in project A
 
@@ -67,7 +68,6 @@ def test_manager():
                             published=now + datetime.timedelta(minutes=48))
     # Adds the activity
     tst_manager.add_activity_feed(tst_activity)
-
 
     # An actor called cquiros moves Form 1 from Project A to Project B
 
@@ -109,6 +109,8 @@ def test_manager():
     # Adds the activity
     tst_manager.add_activity_feed(tst_activity)
 
+    # Carlos Watches project A. Test of convenience function
+    tst_manager.watch('cquiros', '50a808d3-1227-4149-80e9-20922bded1cf', 'project')
 
     # Wait 2 seconds for ES to store previous data. This is only for this testing script
     time.sleep(2)

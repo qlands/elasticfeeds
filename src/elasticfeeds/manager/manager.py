@@ -2,11 +2,12 @@ from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import RequestError
 from elasticfeeds.exceptions import LinkObjectError, LinkExistError, ActivityObjectError, AggregatorObjectError,\
     MaxLinkError
-from elasticfeeds.network import Link
+from elasticfeeds.network import Link, LinkedActivity
 from elasticfeeds.activity import Activity
 from elasticfeeds.aggregators import BaseAggregator
 import uuid
 from dotmap import DotMap
+import datetime
 
 __all__ = ['Manager']
 
@@ -413,6 +414,31 @@ class Manager(object):
                 raise RequestError("Cannot connect to ElasticSearch")
         else:
             raise LinkExistError()
+
+    def follow(self, actor_id, following, linked=datetime.datetime.now()):
+        """
+        A convenience function to declare a follow link
+        :param actor_id:  Actor ID who's link is being declared in the network
+        :param following: The person that is being followed
+        :param linked: Datetime of the link
+        :return: None
+        """
+        a_linked_activity = LinkedActivity(following)
+        a_link = Link(actor_id, a_linked_activity, linked=linked)
+        self.add_network_link(a_link)
+
+    def watch(self, actor_id, watch_id, watch_type, linked=datetime.datetime.now()):
+        """
+        A convenience function to declare a watch link
+        :param actor_id: Actor ID who's link is being declared in the network
+        :param watch_id: The object that is being watched
+        :param watch_type: The object type that is being watched
+        :param linked: Datetime of the link
+        :return: None
+        """
+        a_linked_activity = LinkedActivity(watch_id, 'object', watch_type)
+        a_link = Link(actor_id, a_linked_activity, linked=linked)
+        self.add_network_link(a_link)
 
     def add_activity_feed(self, activity_object):
         """
