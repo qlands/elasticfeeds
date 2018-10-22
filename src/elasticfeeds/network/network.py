@@ -171,7 +171,7 @@ class Link(object):
                         },
                         {
                             "term": {
-                                "linked_activity.class": self.linked_activity.activity_class
+                                "linked_activity.activity_class": self.linked_activity.activity_class
                             }
                         },
                         {

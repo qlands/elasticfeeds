@@ -1,7 +1,8 @@
 __all__ = ['KeyWordError', 'ExtraTypeError', 'WeightTypeError', 'IDError', 'LinkedTypeError', 'LinkObjectError',
            'LinkExistError', 'ActorObjectError', 'ObjectObjectError', 'OriginObjectError', 'TargetObjectError',
            'PublishedTypeError', 'ActivityObjectError', 'LinkedActivityObjectError', 'MaxLinkError',
-           'AggregatorObjectError', 'ActivityClassError', 'OrderError', 'SizeError', 'FromError']
+           'AggregatorObjectError', 'ActivityClassError', 'OrderError', 'SizeError', 'FromError',
+           'LinkNotExistError']
 
 
 class ElasticFeedException(Exception):
@@ -76,6 +77,14 @@ class LinkExistError(ElasticFeedException):
 
     def __str__(self):
         return 'Link object already exists in network'
+
+class LinkNotExistError(ElasticFeedException):
+    """
+        Exception raised when ElasticFeeds checks whether a link object does not exists in network.
+    """
+
+    def __str__(self):
+        return 'Link object does not exists in network'
 
 
 class ActorObjectError(ElasticFeedException):

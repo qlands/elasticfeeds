@@ -1,7 +1,7 @@
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import RequestError
 from elasticfeeds.exceptions import LinkObjectError, LinkExistError, ActivityObjectError, AggregatorObjectError,\
-    MaxLinkError
+    MaxLinkError, LinkNotExistError
 from elasticfeeds.network import Link, LinkedActivity
 from elasticfeeds.activity import Activity
 from elasticfeeds.aggregators import BaseAggregator
@@ -415,6 +415,25 @@ class Manager(object):
         else:
             raise LinkExistError()
 
+    def remove_network_link(self, link_object):
+        """
+        Removes a link from the network
+        :param link_object: The Link object being removed from the index.
+        :return: Bool
+        """
+        if not isinstance(link_object, Link):
+            raise LinkObjectError()
+        if self.link_network_exists(link_object):
+            connection = self.create_connection()
+            if connection is not None:
+                connection.delete_by_query(index=self.network_index, doc_type='link',
+                                           body=link_object.get_search_dict())
+                return True
+            else:
+                raise RequestError("Cannot connect to ElasticSearch")
+        else:
+            raise LinkNotExistError()
+
     def follow(self, actor_id, following, linked=datetime.datetime.now()):
         """
         A convenience function to declare a follow link
@@ -427,6 +446,17 @@ class Manager(object):
         a_link = Link(actor_id, a_linked_activity, linked=linked)
         self.add_network_link(a_link)
 
+    def un_follow(self, actor_id, following):
+        """
+        A convenience function to un-follow a person
+        :param actor_id:  Actor ID who's link is being declared in the network
+        :param following: The person that is being un-followed
+        :return: Bool
+        """
+        a_linked_activity = LinkedActivity(following)
+        a_link = Link(actor_id, a_linked_activity)
+        return self.remove_network_link(a_link)
+
     def watch(self, actor_id, watch_id, watch_type, linked=datetime.datetime.now()):
         """
         A convenience function to declare a watch link
@@ -437,8 +467,20 @@ class Manager(object):
         :return: None
         """
         a_linked_activity = LinkedActivity(watch_id, 'object', watch_type)
-        a_link = Link(actor_id, a_linked_activity, linked=linked)
+        a_link = Link(actor_id, a_linked_activity, linked=linked, link_type='watch')
         self.add_network_link(a_link)
+
+    def un_watch(self, actor_id, watch_id, watch_type):
+        """
+        A convenience function to un-watch an object
+        :param actor_id: Actor ID who's link is being declared in the network
+        :param watch_id: The object that is being un-watched
+        :param watch_type: The object type that is being un-watched
+        :return: Bool
+        """
+        a_linked_activity = LinkedActivity(watch_id, 'object', watch_type)
+        a_link = Link(actor_id, a_linked_activity, link_type='watch')
+        return self.remove_network_link(a_link)
 
     def add_activity_feed(self, activity_object):
         """
@@ -522,4 +564,3 @@ class Manager(object):
                 return []
         else:
             raise RequestError("Cannot connect to ElasticSearch")
-
