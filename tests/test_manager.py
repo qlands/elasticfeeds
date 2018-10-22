@@ -4,10 +4,14 @@
 from elasticfeeds.manager import Manager
 from elasticfeeds.network import Link, LinkedActivity
 from elasticfeeds.activity import Actor, Object, Origin, Target, Activity
+from elasticfeeds.aggregators import UnAggregated
 import datetime
+import time
+
 
 
 def test_manager():
+    now = datetime.datetime.now()
     tst_manager = Manager('testfeeds', 'testnerwork', delete_network_if_exists=True, delete_feeds_if_exists=True)
     # Creates a linked activity
     tst_linked_activity = LinkedActivity('cquiros')
@@ -21,14 +25,13 @@ def test_manager():
     # Testing properties
     tst_link.actor_id = 'cquiros'
     tst_link.linked_activity = tst_linked_activity
-    tst_link.linked = datetime.datetime.now()
+    tst_link.linked = now
     tst_link.link_type = 'follow'
     tst_link.link_weight = 1
     tst_link.extra = {'some_extra_data': 'test'}
 
     # Adds the network link
     tst_manager.add_network_link(tst_link)
-
     # --------------------------- Adds some activity feeds ------------------------------
 
     # An actor called cquiros adds project A
@@ -38,18 +41,20 @@ def test_manager():
     # Creates an object
     tst_object = Object('50a808d3-1227-4149-80e9-20922bded1cf', 'project')
     # Creates an Activity
-    tst_activity = Activity('add', tst_actor, tst_object)
+    tst_activity = Activity('add', tst_actor, tst_object, published=now + datetime.timedelta(minutes=12))
     # Adds the activity
     tst_manager.add_activity_feed(tst_activity)
+
 
     # cquiros adds project B
 
     # Creates an object
     tst_object = Object('152a3304-e78d-4fdf-9449-0943d6072596', 'project')
     # Creates an Activity
-    tst_activity = Activity('add', tst_actor, tst_object)
+    tst_activity = Activity('add', tst_actor, tst_object, published=now + datetime.timedelta(minutes=24))
     # Adds the activity
     tst_manager.add_activity_feed(tst_activity)
+
 
     # cquiros adds Form 1 in project A
 
@@ -58,9 +63,11 @@ def test_manager():
     # Creates a target
     tst_target = Target('50a808d3-1227-4149-80e9-20922bded1cf', 'project')
     # Creates an Activity
-    tst_activity = Activity('add', tst_actor, tst_object, activity_target=tst_target)
+    tst_activity = Activity('add', tst_actor, tst_object, activity_target=tst_target,
+                            published=now + datetime.timedelta(minutes=48))
     # Adds the activity
     tst_manager.add_activity_feed(tst_activity)
+
 
     # An actor called cquiros moves Form 1 from Project A to Project B
 
@@ -95,12 +102,19 @@ def test_manager():
     tst_activity.activity_type = 'move'
     tst_activity.activity_actor = tst_actor
     tst_activity.activity_object = tst_object
-    tst_activity.published = datetime.datetime.now()
+    tst_activity.published = datetime.datetime.now() + datetime.timedelta(minutes=72)
     tst_activity.activity_origin = tst_origin
     tst_activity.activity_target = tst_target
     tst_activity.extra = {'some_extra_data': 'test'}
     # Adds the activity
     tst_manager.add_activity_feed(tst_activity)
+
+
+    # Wait 2 seconds for ES to store previous data. This is only for this testing script
+    time.sleep(2)
+    # Test aggregator
+    tst_base_aggregator = UnAggregated('cquiros')
+    tst_manager.get_feeds(tst_base_aggregator)
 
 
 

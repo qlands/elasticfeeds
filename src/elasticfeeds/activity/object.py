@@ -4,7 +4,21 @@ __all__ = ['Object']
 
 
 class Object(object):
+    """
+    This class represents the entity that is performing the activity.
+    See https://www.w3.org/TR/activitystreams-vocabulary/#dfn-actor for more info.
+    """
     def __init__(self, object_id, object_type, extra=None):
+        """
+        Initializes the Object
+        :param object_id: String. Single ID. The unique id of the object.
+        :param object_type: String. Single word. Provides some degree of specificity to the object. E.g., Document,
+                            Project, Form.
+                            See https://www.w3.org/TR/activitystreams-vocabulary/#object-types for more info
+        :param extra: Use this dict to store extra information at object level.
+                      IMPORTANT NOTE: This dict is "non-analyzable" which means that ES does not perform any
+                      operations on it thus it cannot be used to order, aggregate, or filter query results.
+        """
         temp = object_id.split(" ")
         if len(temp) == 1:
             self._object_id = object_id
@@ -12,7 +26,7 @@ class Object(object):
             raise IDError()
         if not object_type.isalpha():
             raise KeyWordError(object_type)
-        self._object_type = object_type
+        self._object_type = object_type.lower()
         if extra is not None:
             if not isinstance(extra, dict):
                 raise ExtraTypeError()
@@ -20,6 +34,10 @@ class Object(object):
 
     @property
     def object_id(self):
+        """
+        Single ID. The unique id of the object.
+        :return: String
+        """
         return self._object_id
 
     @object_id.setter
@@ -32,16 +50,27 @@ class Object(object):
 
     @property
     def object_type(self):
+        """
+        Single word. Provides some degree of specificity to the object. E.g., Document, Project, Form.
+        See https://www.w3.org/TR/activitystreams-vocabulary/#object-types for more info
+        :return: String
+        """
         return self._object_type
 
     @object_type.setter
     def object_type(self, value):
         if not value.isalpha():
             raise KeyWordError(value)
-        self._object_type = value
+        self._object_type = value.lower()
 
     @property
     def extra(self):
+        """
+        Use this dict to store extra information at object level.
+        IMPORTANT NOTE: This dict is "non-analyzable" which means that ES does not perform any
+        operations on it thus it cannot be used to order, aggregate, or filter query results.
+        :return: Dict
+        """
         return self._extra
 
     @extra.setter
@@ -54,7 +83,7 @@ class Object(object):
     def get_dict(self):
         """
         Creates a dict based on the object definition
-        :return: The object as a dict
+        :return: Dict
         """
         _dict = {"id": self.object_id, "type": self.object_type}
         if self.extra is not None:

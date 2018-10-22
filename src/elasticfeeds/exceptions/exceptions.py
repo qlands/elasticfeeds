@@ -1,6 +1,7 @@
 __all__ = ['KeyWordError', 'ExtraTypeError', 'WeightTypeError', 'IDError', 'LinkedTypeError', 'LinkObjectError',
            'LinkExistError', 'ActorObjectError', 'ObjectObjectError', 'OriginObjectError', 'TargetObjectError',
-           'PublishedTypeError', 'ActivityObjectError', 'LinkedActivityObjectError']
+           'PublishedTypeError', 'ActivityObjectError', 'LinkedActivityObjectError', 'MaxLinkError',
+           'AggregatorObjectError', 'ActivityClassError', 'OrderError', 'SizeError', 'FromError']
 
 
 class ElasticFeedException(Exception):
@@ -138,3 +139,57 @@ class LinkedActivityObjectError(ElasticFeedException):
 
     def __str__(self):
         return 'Linked activity must be of class LinkedActivity'
+
+
+class MaxLinkError(ElasticFeedException):
+    """
+        Exception raised when ElasticFeeds checks whether max_link_size is integer.
+    """
+
+    def __str__(self):
+        return 'The maximum number of links must be integer'
+
+
+class AggregatorObjectError(ElasticFeedException):
+    """
+        Exception raised when ElasticFeeds checks whether an aggregator object is class Aggregator.
+    """
+
+    def __str__(self):
+        return 'Aggregator must be of class Aggregator'
+
+
+class ActivityClassError(ElasticFeedException):
+    """
+        Exception raised when ElasticFeeds checks whether an linked activity class is actor or object.
+    """
+
+    def __str__(self):
+        return 'Linked activity must be either actor or object'
+
+
+class OrderError(ElasticFeedException):
+    """
+        Exception raised when ElasticFeeds checks whether the order is asc or desc.
+    """
+
+    def __str__(self):
+        return 'Order must be asc or desc'
+
+
+class SizeError(ElasticFeedException):
+    """
+        Exception raised when ElasticFeeds checks whether the size is integer.
+    """
+
+    def __str__(self):
+        return 'Size and Top Hits Size must be integer'
+
+
+class FromError(ElasticFeedException):
+    """
+        Exception raised when ElasticFeeds checks whether the from is integer.
+    """
+
+    def __str__(self):
+        return 'From must be integer'

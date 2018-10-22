@@ -10,8 +10,34 @@ __all__ = ['Activity']
 
 
 class Activity(object):
+    """
+    This class represents and document in the feed index. Activities are are based as much as possible on
+    http://activitystrea.ms/
+    """
     def __init__(self, activity_type, activity_actor, activity_object, published=datetime.datetime.now(),
                  activity_origin=None, activity_target=None, extra=None):
+        """
+        Initialize the Activity
+        :param activity_type: Single word in infinitive. Also know as "verb", it describes some form of action that may
+                              happen, is currently happening, or has already happened.
+                              See https://www.w3.org/TR/activitystreams-vocabulary/#dfn-activity for more info.
+        :param activity_actor: Object. Describes the entity that is performing the activity.
+                               See https://www.w3.org/TR/activitystreams-vocabulary/#dfn-actor for more info.
+        :param activity_object: Object. Describes an object of any kind linked to the action itself.
+                                See https://www.w3.org/TR/activitystreams-vocabulary/#dfn-object for more info.
+        :param published: Date when the activity was published
+        :param activity_origin: Optional object. The origin is applicable to any type of activity for which the English
+                                preposition "from" can be considered applicable in the sense of identifying the origin,
+                                source or provenance of the activity's object.
+                                See https://www.w3.org/TR/activitystreams-vocabulary/#origin-target for more info.
+        :param activity_target: Optional object. The target property is applicable to any type of activity for which the
+                                English preposition "to" can be considered applicable in the sense of identifying the
+                                indirect object or destination of the activity's object.
+                                See https://www.w3.org/TR/activitystreams-vocabulary/#origin-target for more info.
+        :param extra: Use this dict to store extra information at activity level.
+                      IMPORTANT NOTE: This dict is "non-analyzable" which means that ES does not perform any
+                      operations on it thus it cannot be used to order, aggregate, or filter query results.
+        """
         if not isinstance(activity_actor, Actor):
             raise ActorObjectError()
         self._activity_actor = activity_actor
@@ -35,20 +61,31 @@ class Activity(object):
         self._published = published
         if not activity_type.isalpha():
             raise KeyWordError(activity_type)
-        self._activity_type = activity_type
+        self._activity_type = activity_type.lower()
 
     @property
     def activity_type(self):
+        """
+        Single word in infinitive. Also know as "verb", it describes some form of action that may
+        happen, is currently happening, or has already happened.
+        See https://www.w3.org/TR/activitystreams-vocabulary/#dfn-activity for more info.
+        :return: String
+        """
         return self._activity_type
 
     @activity_type.setter
     def activity_type(self, value):
         if not value.isalpha():
             raise KeyWordError(value)
-        self._activity_type = value
+        self._activity_type = value.lower()
 
     @property
     def activity_actor(self):
+        """
+        Describes the entity that performing the activity.
+        See https://www.w3.org/TR/activitystreams-vocabulary/#dfn-actor for more info.
+        :return: Object
+        """
         return self._activity_actor
 
     @activity_actor.setter
@@ -59,6 +96,11 @@ class Activity(object):
 
     @property
     def activity_object(self):
+        """
+        Describes an object of any kind linked to the action itself.
+        See https://www.w3.org/TR/activitystreams-vocabulary/#dfn-object for more info.
+        :return: Object
+        """
         return self._activity_object
 
     @activity_object.setter
@@ -69,6 +111,10 @@ class Activity(object):
 
     @property
     def published(self):
+        """
+        Date when the activity was published
+        :return: Datetime
+        """
         return self._published
 
     @published.setter
@@ -79,6 +125,12 @@ class Activity(object):
 
     @property
     def activity_origin(self):
+        """
+        The origin is applicable to any type of activity for which the English preposition "from" can be considered
+        applicable in the sense of identifying the origin, source or provenance of the activity's object.
+        See https://www.w3.org/TR/activitystreams-vocabulary/#origin-target for more info.
+        :return: Object
+        """
         return self._activity_origin
 
     @activity_origin.setter
@@ -89,6 +141,13 @@ class Activity(object):
 
     @property
     def activity_target(self):
+        """
+        The target property is applicable to any type of activity for which the English preposition "to" can be
+        considered applicable in the sense of identifying the indirect object or destination of the activity's
+        object.
+        See https://www.w3.org/TR/activitystreams-vocabulary/#origin-target for more info.
+        :return: Object
+        """
         return self._activity_target
 
     @activity_target.setter
@@ -99,6 +158,12 @@ class Activity(object):
 
     @property
     def extra(self):
+        """
+        Use this dict to store extra information at activity level.
+        IMPORTANT NOTE: This field is "non-analyzable" which means that ES does not perform any operations on it thus
+        it cannot be used to order, aggregate, or filter query results.
+        :return: Dict
+        """
         return self._extra
 
     @extra.setter
@@ -111,7 +176,7 @@ class Activity(object):
     def get_dict(self):
         """
         Creates a dict based on the activity definition
-        :return: The activity as a dict
+        :return: Dict
         """
         iso_date = self.published.isoformat()
         array = iso_date.split("T")

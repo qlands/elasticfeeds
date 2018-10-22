@@ -1,9 +1,12 @@
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import RequestError
-from elasticfeeds.exceptions import LinkObjectError, LinkExistError, ActivityObjectError
+from elasticfeeds.exceptions import LinkObjectError, LinkExistError, ActivityObjectError, AggregatorObjectError,\
+    MaxLinkError
 from elasticfeeds.network import Link
 from elasticfeeds.activity import Activity
+from elasticfeeds.aggregators import BaseAggregator
 import uuid
+from dotmap import DotMap
 
 __all__ = ['Manager']
 
@@ -27,7 +30,7 @@ def _get_feed_index_definition(number_of_shards, number_of_replicas):
               is currently happening, or has already happened.
               See https://www.w3.org/TR/activitystreams-vocabulary/#dfn-activity for more info.
 
-        actor: Describes the entity that performing the activity..
+        actor: Describes the entity that is performing the activity.
                See https://www.w3.org/TR/activitystreams-vocabulary/#dfn-actor for more info.
         actor.id: The unique id of the actor. Only one ID is accepted.
         actor.type: Single word. The type of actor performing the activity. E.g., Person, User, Member.
@@ -55,7 +58,7 @@ def _get_feed_index_definition(number_of_shards, number_of_replicas):
                       IMPORTANT NOTE: This field is "non-analyzable" which means that ES does not perform any
                       operations on it thus it cannot be used to order, aggregate, or filter query results.
 
-        target [optional]: The target property is applicable to any type of activity for which the English preposition
+        target [optional]: The target is applicable to any type of activity for which the English preposition
                            "to" can be considered applicable in the sense of identifying the indirect object or
                            destination of the activity's object.
                            See https://www.w3.org/TR/activitystreams-vocabulary/#origin-target for more information
@@ -64,8 +67,11 @@ def _get_feed_index_definition(number_of_shards, number_of_replicas):
         target.extra: Use this field to store extra information at target level.
                       IMPORTANT NOTE: This field is "non-analyzable" which means that ES does not perform any
                       operations on it thus it cannot be used to order, aggregate, or filter query results.
+        extra: Use this field to store extra information at activity level.
+               IMPORTANT NOTE: This field is "non-analyzable" which means that ES does not perform any
+               operations on it thus it cannot be used to order, aggregate, or filter query results.
 
-    :return: A JSON object with the definition of the Feeds index.
+    :return: Dict.
     """
     # noinspection SpellCheckingInspection
     _json = {
@@ -172,12 +178,15 @@ def _get_network_index_definition(number_of_shards, number_of_replicas):
             actor_id: Single word. The actor who's connection is being declared. For example if the actor "mark" is
                                    following two people then "mark" would appear twice, one per connection.
             link_type: Single word in infinitive. The kind of link being declared. For example: Follow, Watch
-            feed_component: Single word. The feed component that are being followed and watched. This must be either
-                            "actor" or "object"
-            feed_component_type: Single word. The type of feed component that is being followed or watched. For example
-                                 if the feed component is "actor" then it's type could be "Person", "User" or "Member".
-                                 If the feed component is "object" then its type could be "Document", or "Project".
-            feed_component_id: Single ID. The ID that is being followed or watched.
+
+            linked_activity: Linked activity to this link in the network
+            linked_activity.activity_class: Single word. The type of activities that are being followed and watched.
+                                            This must be either "actor" or "object"
+            linked_activity.type: Single word. The type of feed component that is being followed or watched. For example
+                                  if the class is "actor" then it's type could be "Person", "User" or "Member".
+                                  If the class is "object" then its type could be "Document", or "Project".
+            linked_activity.id: Single ID. The ID that is being followed or watched.
+
             link_weight: Numeric. Accept decimals. The wight of the connection. For example, if Mark follows Jane and
                          Katie depending on their interaction in social platform the connection between Mark and Jane
                          could be twice as strong as Mark and Katie, thus Mark and Katie will have a weight of 1 while
@@ -209,7 +218,7 @@ def _get_network_index_definition(number_of_shards, number_of_replicas):
                     },
                     "linked_activity": {
                         "properties": {
-                            "class": {
+                            "activity_class": {
                                 "type": "keyword"
                             },
                             "id": {
@@ -235,6 +244,9 @@ def _get_network_index_definition(number_of_shards, number_of_replicas):
 
 
 class Manager(object):
+    """
+    The Manager class handles all activity feed operations.
+    """
     def create_connection(self):
         """
         Creates a connection to ElasticSearch and pings it.
@@ -263,7 +275,7 @@ class Manager(object):
     def __init__(self, feed_index='feeds', network_index='network', host='localhost', port=9200, url_prefix=None,
                  use_ssl=False, number_of_shards_in_feeds=5, number_of_replicas_in_feeds=1,
                  number_of_shards_in_network=5, number_of_replicas_in_network=1, delete_feeds_if_exists=False,
-                 delete_network_if_exists=False):
+                 delete_network_if_exists=False, max_link_size=1000):
         """
         The constructor of the Manager. It creates the feeds and network indices if they don't exist. See
         https://www.elastic.co/guide/en/elasticsearch/reference/current/_basic_concepts.html#getting-started-shards-and-replicas
@@ -280,6 +292,7 @@ class Manager(object):
         :param number_of_replicas_in_network: Number of replicas for the network index. 1 by default
         :param delete_feeds_if_exists: Delete the feeds index if already exist. False by default
         :param delete_network_if_exists: Delete the network index if already exist. False by default
+        :param max_link_size: Maximum number of links to fetch from an actor
         """
         self.host = host
         self.port = port
@@ -287,6 +300,7 @@ class Manager(object):
         self.use_ssl = use_ssl
         self.feed_index = feed_index
         self.network_index = network_index
+        self._max_link_size = max_link_size
 
         connection = self.create_connection()
         if connection is not None:
@@ -326,6 +340,20 @@ class Manager(object):
                     raise e
         else:
             raise RequestError("Cannot connect to ElasticSearch")
+
+    @property
+    def max_link_size(self):
+        """
+        Maximum number of links to return from an actor
+        :return:
+        """
+        return self._max_link_size
+
+    @max_link_size.setter
+    def max_link_size(self, value):
+        if not isinstance(value, int):
+            raise MaxLinkError()
+        self._max_link_size = value
 
     def delete_feeds_index(self):
         """
@@ -402,3 +430,70 @@ class Manager(object):
             return unique_id
         else:
             raise RequestError("Cannot connect to ElasticSearch")
+
+    def get_search_dict(self, actor_id):
+        """
+        Constructs a ES search that will be used to search for the network of actor_id
+        :param actor_id: The actor to search for its network links
+        :return: A dict that will be passes to ES
+        """
+        _dict = {
+            "size": self.max_link_size,
+            "query": {
+                "bool": {
+                    "must": {
+                        "term": {
+                            "actor_id": actor_id
+                        }
+                    }
+                }
+            },
+            "sort": [
+                {
+                    "linked": {
+                        "order": "desc"
+                    }
+                }
+            ]
+        }
+        return _dict
+
+    def get_network(self, actor_id):
+        """
+        Creates an array of the current network. Each source dict is converted by DotMap so is accessible using dot
+        :return: Array of network connections
+        """
+        result = []
+        connection = self.create_connection()
+        if connection is not None:
+            es_result = connection.search(index=self.network_index, body=self.get_search_dict(actor_id))
+            if es_result['hits']['total'] > 0:
+                for hit in es_result['hits']['hits']:
+                    result.append(DotMap(hit['_source']))
+            return result
+        else:
+            raise RequestError("Cannot connect to ElasticSearch")
+
+    def get_feeds(self, aggregator):
+        """
+        Return an array of feeds. The structure of the elements will depend of the aggregator
+        :param aggregator: Aggregator class
+        :return: Array of feeds or empty array of the actor_id does not have any network links
+        """
+        if not isinstance(aggregator, BaseAggregator):
+            raise AggregatorObjectError()
+        connection = self.create_connection()
+        if connection is not None:
+            aggregator.connection = connection
+            aggregator.feed_index = self.feed_index
+            aggregator.network_array = self.get_network(aggregator.actor_id)
+            aggregator.set_query_dict()
+            if aggregator.query_dict is not None:
+                aggregator.set_aggregation_section()
+                aggregator.query_feeds()
+                return aggregator.get_feeds()
+            else:
+                return []
+        else:
+            raise RequestError("Cannot connect to ElasticSearch")
+

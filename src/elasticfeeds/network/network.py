@@ -7,8 +7,22 @@ __all__ = ['Link']
 
 
 class Link(object):
+    """
+    Link represents a connection in the network of a person. A person can be connected to a another person (follow),
+    or connected to things (watch)
+    """
     def __init__(self, actor_id, linked_activity, linked=datetime.datetime.now(), link_type='follow', link_weight=1,
                  extra=None):
+        """
+        Initialize the Link
+        :param actor_id: Actor ID who's link is being declared
+        :param linked_activity: Linked activity. The type of activity feeds that such connection would bring
+        :param linked: Linked date and time
+        :param link_type: Link type: Usually follow or watch.
+        :param link_weight: The weight of the connection between the actor ID and who or what is being
+                            followed / watched
+        :param extra: Dict of extra data
+        """
         temp = actor_id.split(" ")
         if len(temp) == 1:
             self._actor_id = actor_id
@@ -34,6 +48,10 @@ class Link(object):
 
     @property
     def actor_id(self):
+        """
+        Actor ID who's link is being declared
+        :return: String
+        """
         return self._actor_id
 
     @actor_id.setter
@@ -46,6 +64,10 @@ class Link(object):
 
     @property
     def linked_activity(self):
+        """
+        Linked activity. The type of activity feeds that such connection would bring
+        :return: Linked activity class
+        """
         return self._linked_activity
 
     @linked_activity.setter
@@ -56,6 +78,10 @@ class Link(object):
 
     @property
     def linked(self):
+        """
+        Linked date and time
+        :return: datetime
+        """
         return self._linked
 
     @linked.setter
@@ -66,6 +92,10 @@ class Link(object):
 
     @property
     def link_type(self):
+        """
+        Link type: Usually follow or watch.
+        :return: String
+        """
         return self._link_type
 
     @link_type.setter
@@ -76,6 +106,10 @@ class Link(object):
 
     @property
     def extra(self):
+        """
+        Dict of extra data
+        :return: Dict
+        """
         return self._extra
 
     @extra.setter
@@ -87,6 +121,10 @@ class Link(object):
 
     @property
     def link_weight(self):
+        """
+        The weight of the connection between the actor ID and who or what is being followed / watched
+        :return: Integer or float
+        """
         return self._link_weight
 
     @link_weight.setter
@@ -97,6 +135,10 @@ class Link(object):
             raise WeightTypeError()
 
     def get_dict(self):
+        """
+        Creates a dict representation of a Link
+        :return: Dict
+        """
         _dict = {
             "linked": self._linked,
             "actor_id": self._actor_id,
@@ -109,6 +151,10 @@ class Link(object):
         return _dict
 
     def get_search_dict(self):
+        """
+        Creates a dict that is used for searching if a link already exist
+        :return: Dict
+        """
         _dict = {
             "query": {
                 "bool": {
