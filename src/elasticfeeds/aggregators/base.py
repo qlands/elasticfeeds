@@ -153,20 +153,20 @@ class BaseAggregator(object):
         """
         should = []
         for link in self.network_array:
-            since = link.linked
-            linked_activity = link.linked_activity
-            if linked_activity.activity_class == 'actor':
+            since = link['linked']
+            linked_activity = link['linked_activity']
+            if linked_activity['activity_class'] == 'actor':
                 should_item = {
                     "bool": {
                         "must": [
                             {
                                 "term": {
-                                    "actor.id": linked_activity.id
+                                    "actor.id": linked_activity['id']
                                 }
                             },
                             {
                                 "term": {
-                                    "actor.type": linked_activity.type
+                                    "actor.type": linked_activity['type']
                                 }
                             },
                             {
@@ -184,12 +184,12 @@ class BaseAggregator(object):
                         "must": [
                             {
                                 "term": {
-                                    "object.id": linked_activity.id
+                                    "object.id": linked_activity['id']
                                 }
                             },
                             {
                                 "term": {
-                                    "object.type": linked_activity.type
+                                    "object.type": linked_activity['type']
                                 }
                             },
                             {
@@ -206,12 +206,12 @@ class BaseAggregator(object):
                         "must": [
                             {
                                 "term": {
-                                    "target.id": linked_activity.id
+                                    "target.id": linked_activity['id']
                                 }
                             },
                             {
                                 "term": {
-                                    "target.type": linked_activity.type
+                                    "target.type": linked_activity['type']
                                 }
                             },
                             {

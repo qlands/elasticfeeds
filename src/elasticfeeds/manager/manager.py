@@ -6,7 +6,6 @@ from elasticfeeds.network import Link, LinkedActivity
 from elasticfeeds.activity import Activity
 from elasticfeeds.aggregators import BaseAggregator
 import uuid
-from dotmap import DotMap
 import datetime
 
 __all__ = ['Manager']
@@ -528,8 +527,8 @@ class Manager(object):
 
     def get_network(self, actor_id):
         """
-        Creates an array of the current network. Each source dict is converted by DotMap so is accessible using dot
-        :return: Array of network connections
+        Creates an array of the current network.
+        :return: Dict array
         """
         result = []
         connection = self.create_connection()
@@ -537,7 +536,7 @@ class Manager(object):
             es_result = connection.search(index=self.network_index, body=self.get_search_dict(actor_id))
             if es_result['hits']['total'] > 0:
                 for hit in es_result['hits']['hits']:
-                    result.append(DotMap(hit['_source']))
+                    result.append(hit['_source'])
             return result
         else:
             raise RequestError("Cannot connect to ElasticSearch")

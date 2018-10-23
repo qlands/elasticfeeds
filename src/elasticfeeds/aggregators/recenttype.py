@@ -1,5 +1,4 @@
 from .base import BaseAggregator
-from dotmap import DotMap
 
 
 class RecentTypeAggregator(BaseAggregator):
@@ -44,32 +43,32 @@ class RecentTypeAggregator(BaseAggregator):
 
     def get_feeds(self):
         """
-        Construct an array of the activity feeds grouped by activity type and ordered by published datetime. Each group
-        is accessible with dot:
-            .type: Activity type of the group
-            .activities: An array of the activity feeds ordered by published datetime in the group. Each activity feed
-                         is also accessible with dot:
-                .published
-                .type
-                .extra
+        Construct an array of activity types ordered by published datetime.
+        Each activity type has the following keys
+            type: Activity type
+            activities: An array of the activity feeds ordered by published datetime. Each activity has the following
+                        keys:
+                published
+                type
+                extra (optional)
+                actor
+                    id
+                    type
+                    extra (optional)
+                object
+                    id
+                    type
+                    extra (optional)
+                origin (optional)
+                    id
+                    type
+                    extra (optional)
+                target (optional)
+                    id
+                    type
+                    extra (optional)
 
-                .actor.id
-                .actor.type
-                .actor.extra
-
-                .object.id
-                .object.type
-                .object.extra
-
-                .origin.id
-                .origin.type
-                .origin.extra
-
-                .target.id
-                .target.type
-                .target.extra
-
-        :return: Array
+        :return: Dict array
         """
         result = []
         if self.es_feed_result['hits']['total'] > 0:
@@ -79,5 +78,5 @@ class RecentTypeAggregator(BaseAggregator):
                 for hit in activity_type['top_type_hits']['hits']['hits']:
                     hit_array.append(hit['_source'])
                 _dict['activities'] = hit_array
-                result.append(DotMap(_dict))
+                result.append(_dict)
         return result

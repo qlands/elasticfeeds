@@ -1,5 +1,4 @@
 from .base import BaseAggregator
-from dotmap import DotMap
 
 
 class RecentTypeObjectAggregator(BaseAggregator):
@@ -59,34 +58,33 @@ class RecentTypeObjectAggregator(BaseAggregator):
 
     def get_feeds(self):
         """
-        Construct an array of the activity feeds grouped by activity type, object ID and ordered by published datetime.
-        Each group is accessible with dot:
-            .type: Activity type of the group
-            .ids: An array of each object ID. Each object ID is also accessible with dot
-                .id: The ID of the object group
-                .activities: An array of the activity feeds ordered by published datetime in the ID object group. Each
-                             activity feed is also accessible with dot:
-                    .published
-                    .type
-                    .extra
-
-                    .actor.id
-                    .actor.type
-                    .actor.extra
-
-                    .object.id
-                    .object.type
-                    .object.extra
-
-                    .origin.id
-                    .origin.type
-                    .origin.extra
-
-                    .target.id
-                    .target.type
-                    .target.extra
-
-        :return: Array
+        Construct an array of grouped by activity types and object ID, ordered by published datetime. Each activity
+        type has the following keys:
+            type: Activity type
+            ids: An array of object IDs. Each ID has the following keys:
+                id: The ID of the object
+                activities: An array of the activity feeds ordered by published datetime. Each activity feed has the
+                following keys:
+                    published
+                    type
+                    extra (optional)
+                    actor
+                        id
+                        type
+                        extra (optional)
+                    object
+                        id
+                        type
+                        extra (optional)
+                    origin (optional)
+                        id
+                        type
+                        extra (optional)
+                    target (optional)
+                        id
+                        type
+                        extra (optional)
+        :return: Dict array
         """
         result = []
         if self.es_feed_result['hits']['total'] > 0:
@@ -101,5 +99,5 @@ class RecentTypeObjectAggregator(BaseAggregator):
                     _dict2['activities'] = hit_array
                     id_array.append(_dict2)
                 _dict['ids'] = id_array
-                result.append(DotMap(_dict))
+                result.append(_dict)
         return result

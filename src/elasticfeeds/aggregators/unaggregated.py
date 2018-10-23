@@ -1,5 +1,4 @@
 from .base import BaseAggregator
-from dotmap import DotMap
 
 
 class UnAggregated(BaseAggregator):
@@ -13,34 +12,33 @@ class UnAggregated(BaseAggregator):
 
     def get_feeds(self):
         """
-        Construct an array of the activity feeds ordered by published datetime. Each activity feed is accessible
-        with dot:
-            .published
-            .type
-            .extra
+        Construct an array of the activity feeds ordered by published datetime with the following keys:
+            published
+            type
+            extra (optional)
+            actor
+                id
+                type
+                extra (optional)
+            object
+                id
+                type
+                extra
+            origin (optional)
+                id
+                type
+                extra (optional)
+            target (optional)
+                id
+                type
+                extra (optional)
 
-            .actor.id
-            .actor.type
-            .actor.extra
-
-            .object.id
-            .object.type
-            .object.extra
-
-            .origin.id
-            .origin.type
-            .origin.extra
-
-            .target.id
-            .target.type
-            .target.extra
-
-        :return: Array
+        :return: Dict array
         """
         result = []
         if self.es_feed_result['hits']['total'] > 0:
             for hit in self.es_feed_result['hits']['hits']:
-                result.append(DotMap(hit['_source']))
+                result.append(hit['_source'])
             return result
         else:
             return []
