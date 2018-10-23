@@ -4,14 +4,13 @@
 from elasticfeeds.manager import Manager
 from elasticfeeds.network import Link, LinkedActivity
 from elasticfeeds.activity import Actor, Object, Origin, Target, Activity
-from elasticfeeds.aggregators import UnAggregated
 import datetime
 import time
 
 
 def test_manager():
     now = datetime.datetime.now()
-    tst_manager = Manager('testfeeds', 'testnerwork', delete_network_if_exists=True, delete_feeds_if_exists=True)
+    tst_manager = Manager('testfeeds', 'testnetwork', delete_network_if_exists=True, delete_feeds_if_exists=True)
     # Creates a linked activity
     tst_linked_activity = LinkedActivity('cquiros')
     # Testing properties
@@ -33,7 +32,7 @@ def test_manager():
     tst_manager.add_network_link(tst_link)
 
     # Carlos follow Eduardo. Test of convenience function
-    tst_manager.follow('cquiros', 'edoquiros')
+    tst_manager.follow('cquiros', 'edoquiros', now)
 
     # --------------------------- Adds some activity feeds ------------------------------
 
@@ -111,13 +110,5 @@ def test_manager():
 
     # Carlos Watches project A. Test of convenience function
     tst_manager.watch('cquiros', '50a808d3-1227-4149-80e9-20922bded1cf', 'project')
-
     # Wait 2 seconds for ES to store previous data. This is only for this testing script
     time.sleep(2)
-    # Test aggregator
-    tst_base_aggregator = UnAggregated('cquiros')
-    tst_manager.get_feeds(tst_base_aggregator)
-
-
-
-
