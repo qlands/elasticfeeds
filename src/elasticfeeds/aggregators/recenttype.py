@@ -50,8 +50,6 @@ class RecentTypeAggregator(BaseAggregator):
             .activities: An array of the activity feeds ordered by published datetime in the group. Each activity feed
                          is also accessible with dot:
                 .published
-                .published_date
-                .published_time
                 .type
                 .extra
 

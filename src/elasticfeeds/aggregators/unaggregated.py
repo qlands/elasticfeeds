@@ -16,8 +16,6 @@ class UnAggregated(BaseAggregator):
         Construct an array of the activity feeds ordered by published datetime. Each activity feed is accessible
         with dot:
             .published
-            .published_date
-            .published_time
             .type
             .extra
 
