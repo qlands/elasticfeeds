@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from elasticfeeds.manager import Manager
-from elasticfeeds.aggregators import UnAggregated, RecentTypeAggregator, RecentTypeObjectAggregator
+from elasticfeeds.aggregators import UnAggregated, RecentTypeAggregator, RecentTypeObjectAggregator, \
+    RecentObjectTypeAggregator
 
 
 def test_aggregator():
@@ -19,8 +20,13 @@ def test_aggregator():
     tst_manager.get_feeds(tst_recent_type_aggregator)
 
     # Test recent type object aggregator
-    st_recent_type_object_aggregator = RecentTypeObjectAggregator('cquiros')
-    tst_manager.get_feeds(st_recent_type_object_aggregator)
+    tst_recent_type_object_aggregator = RecentTypeObjectAggregator('cquiros')
+    tst_manager.get_feeds(tst_recent_type_object_aggregator)
+
+    # Test recent object type aggregator
+    tst_recent_object_type_aggregator = RecentObjectTypeAggregator('cquiros')
+    tst_manager.get_feeds(tst_recent_object_type_aggregator)
+
 
 
 
