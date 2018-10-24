@@ -15,7 +15,7 @@ Later, I encounter a post in StackOverflow on "`Creating a SOLR index for activi
 
 After some trial and error, I managed to have feeds in ElasticSearch and perform fan-out on reads. ElasticSearch is incredible fast even with aggregation operations. The presentation on ElasticSearch talks about 40 milliseconds with 140 million of feeds with a 3 nodes. ElasticSearch is scalable which helps if you want to start small e.g., 1 node and progressively add more on demand.
 
-Handling the feeds in ElasticSearch and write aggregation queries is something that would discourage some Python programmer and that’s the reason for ElasticFeeds. ElasticFeeds encapsulates all these complexities allowing you to handle activity feeds with few lines of code and delegating all aggregation operations to ElasticSearch. The user only gets simple arrays of feeds as Python dictionaries.
+Handling feeds in ElasticSearch and write aggregation queries is something that could discourage some Python programmers and that’s the reason for ElasticFeeds. ElasticFeeds encapsulates all these complexities allowing you to handle activity feeds with few lines of code while delegating all aggregation operations to ElasticSearch. The user only gets simple arrays of feeds as Python dictionaries.
 
 
 
@@ -99,3 +99,8 @@ Usage
     my_feeds = my_manager.get_feeds(my_aggregate_feed)
     print(my_feeds)
 
+Collaborate
+===========
+The way you manage feeds will depend on the kind of social platform you are implementing. While ElasticFeeds can store any kind of feeds and have some aggregator classes, the way you aggregate them would depend on how you want to present them to the end user.
+
+The best way to collaborate with ElasticFeeds is by sharing aggregator classes with others. So if you have an aggregator, fork the project, create a pull request and I will be happy to add it to the base code :-)
