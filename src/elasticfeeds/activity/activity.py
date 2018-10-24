@@ -187,6 +187,8 @@ class Activity(object):
             "published": iso_date,
             "published_date": date,
             "published_time": time,
+            "published_year": self.published.year,
+            "published_month": self.published.month,
             "actor": self.activity_actor.get_dict(),
             "type": self.activity_type,
             "object": self.activity_object.get_dict()

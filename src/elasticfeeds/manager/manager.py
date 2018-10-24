@@ -95,6 +95,12 @@ def _get_feed_index_definition(number_of_shards, number_of_replicas):
                         "type": "date",
                         "format": "HH:mm:ss"
                     },
+                    "published_year": {
+                        "type": "integer"
+                    },
+                    "published_month": {
+                        "type": "integer"
+                    },
                     "type": {
                         "type": "keyword"
                     },

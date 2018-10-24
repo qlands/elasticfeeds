@@ -2,7 +2,7 @@ __all__ = ['KeyWordError', 'ExtraTypeError', 'WeightTypeError', 'IDError', 'Link
            'LinkExistError', 'ActorObjectError', 'ObjectObjectError', 'OriginObjectError', 'TargetObjectError',
            'PublishedTypeError', 'ActivityObjectError', 'LinkedActivityObjectError', 'MaxLinkError',
            'AggregatorObjectError', 'ActivityClassError', 'OrderError', 'SizeError', 'FromError',
-           'LinkNotExistError']
+           'LinkNotExistError', 'ElasticFeedException']
 
 
 class ElasticFeedException(Exception):

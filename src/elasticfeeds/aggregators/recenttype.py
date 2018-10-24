@@ -43,7 +43,7 @@ class RecentTypeAggregator(BaseAggregator):
 
     def get_feeds(self):
         """
-        Construct an array of activity types ordered by published datetime.
+        Construct an array of activity feeds grouped by type and ordered by published datetime.
         Each activity type has the following keys
             type: Activity type
             activities: An array of the activity feeds ordered by published datetime. Each activity has the following

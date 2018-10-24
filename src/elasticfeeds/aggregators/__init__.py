@@ -4,3 +4,4 @@ from .recenttype import *
 from .recenttypeobject import *
 from .recentobjecttype import *
 from .dateweight import *
+from .yearmonthtype import *

@@ -58,8 +58,8 @@ class RecentObjectTypeAggregator(BaseAggregator):
 
     def get_feeds(self):
         """
-        Construct an array of the grouped object ID and activity types ordered by published datetime. Each object ID has
-        the following keys
+        Construct an array of activity feeds grouped by object ID and activity types ordered by published datetime. Each
+        object ID has the following keys
             id: The ID of the object
             types: An array of activity types. Each activity type has the following keys:
                 type: Activity type

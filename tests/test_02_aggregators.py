@@ -3,7 +3,8 @@
 
 from elasticfeeds.manager import Manager
 from elasticfeeds.aggregators import UnAggregated, RecentTypeAggregator, RecentTypeObjectAggregator, \
-    RecentObjectTypeAggregator, DateWeightAggregator
+    RecentObjectTypeAggregator, DateWeightAggregator, YearMonthTypeAggregator
+import pprint
 
 
 def test_aggregator():
@@ -30,6 +31,10 @@ def test_aggregator():
     # Test recent object type aggregator
     tst_date_weight_aggregator = DateWeightAggregator('cquiros')
     tst_manager.get_feeds(tst_date_weight_aggregator)
+
+    # Test year, month, type aggregator
+    tst_year_month_type_aggregator = YearMonthTypeAggregator('cquiros')
+    tst_manager.get_feeds(tst_year_month_type_aggregator)
 
 
 
