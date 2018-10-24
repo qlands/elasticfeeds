@@ -21,6 +21,7 @@ before_script:
   - git config --global user.email "cquiros@qlands.com"
   - git config --global user.name "Carlos Quiros"
 script:
+  - python setup.py develop
   - pytest --cov=./
 after_success:
   - if [[ "$COVERAGE" == "true" ]]; then coveralls || echo "failed"; fi
