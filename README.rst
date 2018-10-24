@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/qlands/elasticfeeds.svg?branch=master
+.. image:: https://codecov.io/gh/qlands/elasticfeeds/branch/master/graph/badge.svg
+
 ============
 ElasticFeeds
 ============
