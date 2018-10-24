@@ -31,13 +31,13 @@ Usage
     $ cd elasticfeeds
     $ pip install -e .
 
-* Install ElasticSearch. The easiest way here if you want to test ElasticFeeds is by using the provided docker compose file in the elasticsearch_docker directory
+* Install ElasticSearch. The easiest way here, if you want to test ElasticFeeds, is by using the provided docker compose file in the elasticsearch_docker directory
 
 .. code-block:: bash
 
     $ sudo apt-get install docker docker-compose
     $ cd elasticsearch_docker
-    $ sudo sudo docker-compose up
+    $ sudo docker-compose up
 
     This will start a 3 node ElasticSearch (6.3.2) in port 9200 with Kibana in port 5601.
     If ElasticSearch fails to start due to "max virtual memory error" shutdown the docker (Ctrl+c) and do:
