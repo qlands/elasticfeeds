@@ -1,19 +1,85 @@
 ============
-elasticfeeds
+ElasticFeeds
 ============
 
 
-ElasticFeeds
+A python library to manage notification and activity feeds using ElasticSearch as backend.
 
 
 Description
 ===========
 
-A longer description of your project goes here...
+A few months ago, I started to work on a social media platform in Python with Pyramid and I had to get my hands into handling activity feeds. After searching the internet for possible Python frameworks, I realized that those well maintained (`Django Activity Stream <https://django-activity-stream.readthedocs.io/en/latest/index.html>`_ and `Stream Framework <https://github.com/tschellenbach/Stream-Framework>`_) were very oriented to Django (which I hate). Furthermore, both frameworks use asynchronous tasks to perform “fan-out on write” operations which I think is an overkill if you consider a user like @katyperry with 107,805,373 followers.
+
+Later, I encounter a post in StackOverflow on "`Creating a SOLR index for activity stream or newsfeed <https://stackoverflow.com/questions/44468264/creating-a-solr-index-for-activity-stream-or-newsfeed#comment91900926_44468264>`_" which attached a presentation on "`A news feed with ElasticSearch <http://www.quentinsuire.com/presentations/a-news-feed-with-elasticsearch/#/>`_". The authors explain how to use `ElasticSearch <https://www.elastic.co/products/elasticsearch>`_ to create “fan-out on read” by “Storing atomic news and compose a news feed at the query time”. Fan-out on read vs fan-out on write, some more reading pointed me to a `presentation <https://www.infoq.com/presentations/Facebook-Software-Stack>`_ by Aditya Agarwal where he hints how FaceBook performs fan-out on read by storing actions per user in leaf servers then an aggregator pulls and aggregates the actions of my friends by their ids. So “fan-out on read” was the way to go.
+
+After some trial and error, I managed to have feeds in ElasticSearch and perform fan-out on reads. ElasticSearch is incredible fast even with aggregation operations. The presentation on ElasticSearch talks about 40 milliseconds with 140 million of feeds with a 3 nodes. ElasticSearch is scalable which helps if you want to start small e.g., 1 node and progressively add more on demand.
+
+Handling the feeds in ElasticSearch and write aggregation queries is something that would discourage some Python programmer and that’s the reason for ElasticFeeds. ElasticFeeds encapsulates all these complexities allowing you to handle activity feeds with few lines of code and delegating all aggregation operations to ElasticSearch. The user only gets simple arrays of feeds as Python dictionaries.
 
 
-Note
-====
 
-This project has been set up using PyScaffold 3.1. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
+Usage
+=====
+
+* Clone this repository and install ElasticFeeds
+
+.. code-block:: bash
+
+    $ git clone https://github.com/qlands/elasticfeeds.git
+    $ cd elasticfeeds
+    $ pip install -e .
+
+* Create a ElasticFeeds Manager
+
+.. code-block:: python
+
+    from elasticfeeds.manager import Manager
+    my_manager = Manager('testfeeds', 'testnetwork')
+
+* Follow some people
+
+.. code-block:: python
+
+    # Carlos follows himself (notification feed)
+    my_manager.follow('carlos', 'carlos')
+    # Carlos follows mark (Activity feed)
+    my_manager.follow('carlos', 'mark')
+
+* Create some activities
+
+.. code-block:: python
+
+    from elasticfeeds.activity import Actor, Object, Activity
+    # Create an actor for Carlos of type person
+    my_actor = Actor('carlos', 'person')
+    # Create an Object for Project A of type project
+    my_project = Object('project_a', 'project')
+    # Create an activity representing that Carlos added project A
+    my_activity = Activity('add', my_actor, my_project)
+    # Store the activity
+    my_manager.add_activity_feed(my_activity)
+
+    # Create an actor for Mark of type person
+    my_actor = Actor('mark', 'person')
+    # Create an Object for Project A of type project
+    my_project = Object('project_a', 'project')
+    # Create an activity representing that Mark created a blog about project A
+    my_activity = Activity('blog', my_actor, my_project)
+    # Store the activity
+    my_manager.add_activity_feed(my_activity)
+
+* Query the activity feeds
+
+.. code-block:: python
+
+    from elasticfeeds.aggregators import UnAggregated, YearMonthTypeAggregator
+    # Get feeds just ordered by date
+    my_basic_aggregator = UnAggregated('carlos')
+    my_feeds = my_manager.get_feeds(my_basic_aggregator)
+    print(my_feeds)
+    # Get feeds aggregated by year, month and type (verb)
+    my_aggregate_feed = YearMonthTypeAggregator('carlos')
+    my_feeds = my_manager.get_feeds(my_aggregate_feed)
+    print(my_feeds)
+
