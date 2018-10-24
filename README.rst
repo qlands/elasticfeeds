@@ -1,5 +1,4 @@
-.. image:: https://travis-ci.org/qlands/elasticfeeds.svg?branch=master
-.. image:: https://codecov.io/gh/qlands/elasticfeeds/branch/master/graph/badge.svg
+|build-status| |coverage|
 
 ============
 ElasticFeeds
@@ -107,3 +106,11 @@ Collaborate
 The way you manage feeds will depend on the kind of social platform you are implementing. While ElasticFeeds can store any kind of feeds and have some aggregator classes, the way you aggregate them would depend on how you want to present them to the end user.
 
 The best way to collaborate with ElasticFeeds is by sharing aggregator classes with others. So if you have an aggregator, fork the project, create a pull request and I will be happy to add it to the base code :-)
+
+.. |build-status| image:: https://travis-ci.org/qlands/elasticfeeds.svg?branch=master
+    :alt: Build status
+    :target: https://travis-ci.org/qlands/elasticfeeds
+
+.. |coverage| image:: https://codecov.io/gh/qlands/elasticfeeds/branch/master/graph/badge.svg
+    :alt: Coverage
+    :target: https://codecov.io/gh/qlands/elasticfeeds
