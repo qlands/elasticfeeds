@@ -13,6 +13,7 @@ before_install:
 install:
   - source tests/travis_install.sh
   - pip install -r requirements.txt
+  - pip install codecov pytest pytest-cov
   # ^  DEPRECATION WARNING:
   # The automatic creation of a `requirements.txt` file is deprecated.
   # See `Dependency Management` in the docs for other options.
@@ -20,9 +21,10 @@ before_script:
   - git config --global user.email "cquiros@qlands.com"
   - git config --global user.name "Carlos Quiros"
 script:
-  - python setup.py test
+  - pytest --cov=./
 after_success:
   - if [[ "$COVERAGE" == "true" ]]; then coveralls || echo "failed"; fi
+  - if [[ "$COVERAGE" == "true" ]]; then codecov -e CODECOV_ENV || echo "failed"; fi
 after_script:
   - travis-cleanup
 cache:
