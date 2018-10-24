@@ -7,8 +7,6 @@ virtualenv:
   system_site_packages: true
 matrix:
   include:
-    - python: 3.4
-      env: DISTRIB="ubuntu" TOX_PYTHON_VERSION="py34" COVERAGE="true"
     - env: DISTRIB="conda" PYTHON_VERSION="3.6" COVERAGE="true"
 before_install:
   - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.4.2.deb && sudo dpkg -i --force-confnew elasticsearch-6.4.2.deb && sudo service elasticsearch restart
