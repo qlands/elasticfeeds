@@ -20,6 +20,10 @@ After some trial and error, I managed to have feeds in ElasticSearch and perform
 Handling feeds in ElasticSearch and write aggregation queries is something that could discourage some Python programmers and that’s the reason for ElasticFeeds. ElasticFeeds encapsulates all these complexities allowing you to handle activity feeds with few lines of code while delegating all aggregation operations to ElasticSearch. The user only gets simple arrays of feeds as Python dictionaries.
 
 
+Requirements
+============
+
+* ElasticSearch >= 6.0.0
 
 Usage
 =====
