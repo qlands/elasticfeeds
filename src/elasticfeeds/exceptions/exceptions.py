@@ -1,8 +1,27 @@
-__all__ = ['KeyWordError', 'ExtraTypeError', 'WeightTypeError', 'IDError', 'LinkedTypeError', 'LinkObjectError',
-           'LinkExistError', 'ActorObjectError', 'ObjectObjectError', 'OriginObjectError', 'TargetObjectError',
-           'PublishedTypeError', 'ActivityObjectError', 'LinkedActivityObjectError', 'MaxLinkError',
-           'AggregatorObjectError', 'ActivityClassError', 'OrderError', 'SizeError', 'FromError',
-           'LinkNotExistError', 'ElasticFeedException']
+__all__ = [
+    "KeyWordError",
+    "ExtraTypeError",
+    "WeightTypeError",
+    "IDError",
+    "LinkedTypeError",
+    "LinkObjectError",
+    "LinkExistError",
+    "ActorObjectError",
+    "ObjectObjectError",
+    "OriginObjectError",
+    "TargetObjectError",
+    "PublishedTypeError",
+    "ActivityObjectError",
+    "LinkedActivityObjectError",
+    "MaxLinkError",
+    "AggregatorObjectError",
+    "ActivityClassError",
+    "OrderError",
+    "SizeError",
+    "FromError",
+    "LinkNotExistError",
+    "ElasticFeedException",
+]
 
 
 class ElasticFeedException(Exception):
@@ -22,7 +41,10 @@ class KeyWordError(ElasticFeedException):
         return self.args[0]
 
     def __str__(self):
-        return 'Keyword (%s) has invalid characters. Only alpha characters are allowed' % self.keyword
+        return (
+            "Keyword (%s) has invalid characters. Only alpha characters are allowed"
+            % self.keyword
+        )
 
 
 class ExtraTypeError(ElasticFeedException):
@@ -31,7 +53,7 @@ class ExtraTypeError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Extra must be none or dictionary'
+        return "Extra must be none or dictionary"
 
 
 class WeightTypeError(ElasticFeedException):
@@ -40,7 +62,7 @@ class WeightTypeError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Weight must be integer or float'
+        return "Weight must be integer or float"
 
 
 class LinkedTypeError(ElasticFeedException):
@@ -49,7 +71,7 @@ class LinkedTypeError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Linked must be datetime'
+        return "Linked must be datetime"
 
 
 class IDError(ElasticFeedException):
@@ -58,7 +80,7 @@ class IDError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'IDs cannot have spaces'
+        return "IDs cannot have spaces"
 
 
 class LinkObjectError(ElasticFeedException):
@@ -67,7 +89,7 @@ class LinkObjectError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Link must be of class Link'
+        return "Link must be of class Link"
 
 
 class LinkExistError(ElasticFeedException):
@@ -76,7 +98,8 @@ class LinkExistError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Link object already exists in network'
+        return "Link object already exists in network"
+
 
 class LinkNotExistError(ElasticFeedException):
     """
@@ -84,7 +107,7 @@ class LinkNotExistError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Link object does not exists in network'
+        return "Link object does not exists in network"
 
 
 class ActorObjectError(ElasticFeedException):
@@ -93,7 +116,7 @@ class ActorObjectError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Actor must be of class Actor'
+        return "Actor must be of class Actor"
 
 
 class ObjectObjectError(ElasticFeedException):
@@ -102,7 +125,7 @@ class ObjectObjectError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Object must be of class Object'
+        return "Object must be of class Object"
 
 
 class OriginObjectError(ElasticFeedException):
@@ -111,7 +134,7 @@ class OriginObjectError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Origin must be of class Origin'
+        return "Origin must be of class Origin"
 
 
 class TargetObjectError(ElasticFeedException):
@@ -120,7 +143,7 @@ class TargetObjectError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Target must be of class Target'
+        return "Target must be of class Target"
 
 
 class PublishedTypeError(ElasticFeedException):
@@ -129,7 +152,7 @@ class PublishedTypeError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Published must be datetime'
+        return "Published must be datetime"
 
 
 class ActivityObjectError(ElasticFeedException):
@@ -138,7 +161,7 @@ class ActivityObjectError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Activity must be of class Activity'
+        return "Activity must be of class Activity"
 
 
 class LinkedActivityObjectError(ElasticFeedException):
@@ -147,7 +170,7 @@ class LinkedActivityObjectError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Linked activity must be of class LinkedActivity'
+        return "Linked activity must be of class LinkedActivity"
 
 
 class MaxLinkError(ElasticFeedException):
@@ -156,7 +179,7 @@ class MaxLinkError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'The maximum number of links must be integer'
+        return "The maximum number of links must be integer"
 
 
 class AggregatorObjectError(ElasticFeedException):
@@ -165,7 +188,7 @@ class AggregatorObjectError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Aggregator must be of class Aggregator'
+        return "Aggregator must be of class Aggregator"
 
 
 class ActivityClassError(ElasticFeedException):
@@ -174,7 +197,7 @@ class ActivityClassError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Linked activity must be either actor or object'
+        return "Linked activity must be either actor or object"
 
 
 class OrderError(ElasticFeedException):
@@ -183,7 +206,7 @@ class OrderError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Order must be asc or desc'
+        return "Order must be asc or desc"
 
 
 class SizeError(ElasticFeedException):
@@ -192,7 +215,7 @@ class SizeError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'Size and Top Hits Size must be integer'
+        return "Size and Top Hits Size must be integer"
 
 
 class FromError(ElasticFeedException):
@@ -201,4 +224,4 @@ class FromError(ElasticFeedException):
     """
 
     def __str__(self):
-        return 'From must be integer'
+        return "From must be integer"

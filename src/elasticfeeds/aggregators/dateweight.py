@@ -7,45 +7,30 @@ class DateWeightAggregator(BaseAggregator):
     This aggregator returns activity feeds based on the same date and ordered by the weight of the connection. The
     aggregator only return feeds with activity_class = 'actor'
     """
+
     def set_query_dict(self):
         """
         We overwrite this method so only feeds with activity_class = 'actor' are retrieved
         """
         should = []
         for link in self.network_array:
-            since = link['linked']
-            linked_activity = link['linked_activity']
-            if linked_activity['activity_class'] == 'actor':
+            since = link["linked"]
+            linked_activity = link["linked_activity"]
+            if linked_activity["activity_class"] == "actor":
                 should_item = {
                     "bool": {
                         "must": [
-                            {
-                                "term": {
-                                    "actor.id": linked_activity['id']
-                                }
-                            },
-                            {
-                                "term": {
-                                    "actor.type": linked_activity['type']
-                                }
-                            },
-                            {
-                                "range": {
-                                    "published": {"gte": since}
-                                }
-                            }
+                            {"term": {"actor.id": linked_activity["id"]}},
+                            {"term": {"actor.type": linked_activity["type"]}},
+                            {"range": {"published": {"gte": since}}},
                         ]
                     }
                 }
                 should.append(should_item)
         if len(should) > 0:
             self.query_dict = {
-                "query": {
-                    "bool": {
-                        "should": should
-                    }
-                },
-                "sort": self.get_sort_array()
+                "query": {"bool": {"should": should}},
+                "sort": self.get_sort_array(),
             }
         else:
             self.query_dict = None
@@ -54,14 +39,14 @@ class DateWeightAggregator(BaseAggregator):
         # Get the weights from the network
         weights = []
         for link in self.network_array:
-            if link['linked_activity']['activity_class'] == 'actor':
-                weights.append({'id': link['linked_activity']['id'], 'weight': link['link_weight']})
-        self.query_dict['size'] = 0
-        self.query_dict['aggs'] = {
+            if link["linked_activity"]["activity_class"] == "actor":
+                weights.append(
+                    {"id": link["linked_activity"]["id"], "weight": link["link_weight"]}
+                )
+        self.query_dict["size"] = 0
+        self.query_dict["aggs"] = {
             "dates": {
-                "terms": {
-                    "field": "published_date",
-                },
+                "terms": {"field": "published_date"},
                 "aggs": {
                     "top_date_hits": {
                         "top_hits": {
@@ -71,20 +56,25 @@ class DateWeightAggregator(BaseAggregator):
                                     "script": {
                                         "lang": "painless",
                                         "source": "def weight = 1; for (int i = 0; i < params.weights.length; ++i) { if (params.weights[i].id == doc['actor.id'].value) return params.weights[i].weight; } return weight;",
-                                        "params": {
-                                            "weights": weights
-                                        }
+                                        "params": {"weights": weights},
                                     },
-                                    "order": "desc"
+                                    "order": "desc",
                                 }
                             },
                             "_source": {
-                                "includes": ["published", "actor", "object", "origin", "target", "extra"]
+                                "includes": [
+                                    "published",
+                                    "actor",
+                                    "object",
+                                    "origin",
+                                    "target",
+                                    "extra",
+                                ]
                             },
-                            "size": self.top_hits_size
+                            "size": self.top_hits_size,
                         }
                     }
-                }
+                },
             }
         }
 
@@ -117,12 +107,12 @@ class DateWeightAggregator(BaseAggregator):
         :return: Dict array
         """
         result = []
-        if self.es_feed_result['hits']['total'] > 0:
-            for a_date in self.es_feed_result['aggregations']['dates']['buckets']:
-                _dict = {'date': a_date['key_as_string']}
+        if self.es_feed_result["hits"]["total"] > 0:
+            for a_date in self.es_feed_result["aggregations"]["dates"]["buckets"]:
+                _dict = {"date": a_date["key_as_string"]}
                 hit_array = []
-                for hit in a_date['top_date_hits']['hits']['hits']:
-                    hit_array.append(hit['_source'])
-                _dict['activities'] = hit_array
+                for hit in a_date["top_date_hits"]["hits"]["hits"]:
+                    hit_array.append(hit["_source"])
+                _dict["activities"] = hit_array
                 result.append(_dict)
         return result

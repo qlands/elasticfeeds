@@ -7,52 +7,38 @@ class RecentTypeObjectAggregator(BaseAggregator):
     """
 
     def set_aggregation_section(self):
-        self.query_dict['size'] = 0
-        self.query_dict['aggs'] = {
+        self.query_dict["size"] = 0
+        self.query_dict["aggs"] = {
             "types": {
-                "terms": {
-                    "field": "type",
-                    "order": {
-                        "max_type_date": "desc"
-                    }
-                },
+                "terms": {"field": "type", "order": {"max_type_date": "desc"}},
                 "aggs": {
-                    "max_type_date": {
-                        "max": {
-                            "script": "doc.published"
-                        }
-                    },
+                    "max_type_date": {"max": {"script": "doc.published"}},
                     "objects": {
                         "terms": {
                             "field": "object.id",
-                            "order": {
-                                "max_obj_date": "desc"
-                            }
+                            "order": {"max_obj_date": "desc"},
                         },
                         "aggs": {
-                            "max_obj_date": {
-                                "max": {
-                                    "script": "doc.published"
-                                }
-                            },
+                            "max_obj_date": {"max": {"script": "doc.published"}},
                             "top_obj_hits": {
                                 "top_hits": {
-                                    "sort": [
-                                        {
-                                            "published": {
-                                                "order": "desc"
-                                            }
-                                        }
-                                    ],
+                                    "sort": [{"published": {"order": "desc"}}],
                                     "_source": {
-                                        "includes": ["published", "actor", "object", "origin", "target", "extra"]
+                                        "includes": [
+                                            "published",
+                                            "actor",
+                                            "object",
+                                            "origin",
+                                            "target",
+                                            "extra",
+                                        ]
                                     },
-                                    "size": self.top_hits_size
+                                    "size": self.top_hits_size,
                                 }
-                            }
-                        }
-                    }
-                }
+                            },
+                        },
+                    },
+                },
             }
         }
 
@@ -87,17 +73,19 @@ class RecentTypeObjectAggregator(BaseAggregator):
         :return: Dict array
         """
         result = []
-        if self.es_feed_result['hits']['total'] > 0:
-            for activity_type in self.es_feed_result['aggregations']['types']['buckets']:
-                _dict = {'type': activity_type['key']}
+        if self.es_feed_result["hits"]["total"] > 0:
+            for activity_type in self.es_feed_result["aggregations"]["types"][
+                "buckets"
+            ]:
+                _dict = {"type": activity_type["key"]}
                 id_array = []
-                for an_object in activity_type['objects']['buckets']:
-                    _dict2 = {'id': an_object['key']}
+                for an_object in activity_type["objects"]["buckets"]:
+                    _dict2 = {"id": an_object["key"]}
                     hit_array = []
-                    for hit in an_object['top_obj_hits']['hits']['hits']:
-                        hit_array.append(hit['_source'])
-                    _dict2['activities'] = hit_array
+                    for hit in an_object["top_obj_hits"]["hits"]["hits"]:
+                        hit_array.append(hit["_source"])
+                    _dict2["activities"] = hit_array
                     id_array.append(_dict2)
-                _dict['ids'] = id_array
+                _dict["ids"] = id_array
                 result.append(_dict)
         return result

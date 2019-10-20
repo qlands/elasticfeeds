@@ -2,11 +2,18 @@ from .actor import Actor
 from .object import Object
 from .origin import Origin
 from .target import Target
-from elasticfeeds.exceptions import ActorObjectError, ObjectObjectError, OriginObjectError, TargetObjectError, \
-    ExtraTypeError, PublishedTypeError, KeyWordError
+from elasticfeeds.exceptions import (
+    ActorObjectError,
+    ObjectObjectError,
+    OriginObjectError,
+    TargetObjectError,
+    ExtraTypeError,
+    PublishedTypeError,
+    KeyWordError,
+)
 import datetime
 
-__all__ = ['Activity']
+__all__ = ["Activity"]
 
 
 class Activity(object):
@@ -14,8 +21,17 @@ class Activity(object):
     This class represents and document in the feed index. Activities are are based as much as possible on
     http://activitystrea.ms/
     """
-    def __init__(self, activity_type, activity_actor, activity_object, published=datetime.datetime.now(),
-                 activity_origin=None, activity_target=None, extra=None):
+
+    def __init__(
+        self,
+        activity_type,
+        activity_actor,
+        activity_object,
+        published=datetime.datetime.now(),
+        activity_origin=None,
+        activity_target=None,
+        extra=None,
+    ):
         """
         Initialize the Activity
         :param activity_type: Single word in infinitive. Also know as "verb", it describes some form of action that may
@@ -191,7 +207,7 @@ class Activity(object):
             "published_month": self.published.month,
             "actor": self.activity_actor.get_dict(),
             "type": self.activity_type,
-            "object": self.activity_object.get_dict()
+            "object": self.activity_object.get_dict(),
         }
         if self.activity_origin is not None:
             _dict["origin"] = self.activity_origin.get_dict()

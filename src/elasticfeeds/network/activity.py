@@ -1,13 +1,14 @@
 from elasticfeeds.exceptions import KeyWordError, IDError, ActivityClassError
 
-__all__ = ['LinkedActivity']
+__all__ = ["LinkedActivity"]
 
 
 class LinkedActivity(object):
     """
     This class represents a linked activity in the network of an actor
     """
-    def __init__(self, activity_id, activity_class='actor', activity_type='person'):
+
+    def __init__(self, activity_id, activity_class="actor", activity_type="person"):
         """
         Initializes the linked activity
         :param activity_id: String. The ID that is being followed or watched.
@@ -24,7 +25,7 @@ class LinkedActivity(object):
             raise IDError()
         if not activity_class.isalpha():
             raise KeyWordError(activity_class)
-        if activity_class == 'actor' or activity_class == 'object':
+        if activity_class == "actor" or activity_class == "object":
             self._activity_class = activity_class.lower()
         else:
             raise ActivityClassError
@@ -60,7 +61,7 @@ class LinkedActivity(object):
     def activity_class(self, value):
         if not value.isalpha():
             raise KeyWordError(value)
-        if value == 'actor' or value == 'object':
+        if value == "actor" or value == "object":
             self._activity_class = value.lower()
         else:
             raise ActivityClassError
@@ -86,5 +87,9 @@ class LinkedActivity(object):
         Creates a dict based on the Linked Activity definition
         :return: Dict
         """
-        _dict = {"activity_class": self.activity_class, "id": self.activity_id, "type": self.activity_type}
+        _dict = {
+            "activity_class": self.activity_class,
+            "id": self.activity_id,
+            "type": self.activity_type,
+        }
         return _dict

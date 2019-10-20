@@ -1,6 +1,6 @@
 from elasticfeeds.exceptions import KeyWordError, ExtraTypeError, IDError
 
-__all__ = ['Origin']
+__all__ = ["Origin"]
 
 
 class Origin(object):
@@ -9,6 +9,7 @@ class Origin(object):
     "from" can be considered applicable in the sense of identifying the origin, source or provenance of the activity's
     object. See https://www.w3.org/TR/activitystreams-vocabulary/#origin-target for more information.
     """
+
     def __init__(self, origin_id, origin_type, extra=None):
         """
         Initializes the Origin

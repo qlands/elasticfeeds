@@ -1,6 +1,6 @@
 from elasticfeeds.exceptions import KeyWordError, ExtraTypeError, IDError
 
-__all__ = ['Target']
+__all__ = ["Target"]
 
 
 class Target(object):
@@ -9,6 +9,7 @@ class Target(object):
     "to" can be considered applicable in the sense of identifying the indirect object or destination of the activity's
     object. See https://www.w3.org/TR/activitystreams-vocabulary/#origin-target for more information
     """
+
     def __init__(self, target_id, target_type, extra=None):
         """
         Initializes the target

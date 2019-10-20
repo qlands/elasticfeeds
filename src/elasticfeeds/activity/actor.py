@@ -1,6 +1,6 @@
 from elasticfeeds.exceptions import KeyWordError, ExtraTypeError, IDError
 
-__all__ = ['Actor']
+__all__ = ["Actor"]
 
 
 class Actor(object):
@@ -8,6 +8,7 @@ class Actor(object):
     This class represents the entity that is performing the activity.
     See https://www.w3.org/TR/activitystreams-vocabulary/#dfn-actor for more info.
     """
+
     def __init__(self, actor_id, actor_type, extra=None):
         """
         Initializes the Actor

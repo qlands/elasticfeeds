@@ -1,14 +1,20 @@
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import RequestError
-from elasticfeeds.exceptions import LinkObjectError, LinkExistError, ActivityObjectError, AggregatorObjectError,\
-    MaxLinkError, LinkNotExistError
+from elasticfeeds.exceptions import (
+    LinkObjectError,
+    LinkExistError,
+    ActivityObjectError,
+    AggregatorObjectError,
+    MaxLinkError,
+    LinkNotExistError,
+)
 from elasticfeeds.network import Link, LinkedActivity
 from elasticfeeds.activity import Activity
 from elasticfeeds.aggregators import BaseAggregator
 import uuid
 import datetime
 
-__all__ = ['Manager']
+__all__ = ["Manager"]
 
 
 def _get_feed_index_definition(number_of_shards, number_of_replicas):
@@ -78,95 +84,50 @@ def _get_feed_index_definition(number_of_shards, number_of_replicas):
         "settings": {
             "index": {
                 "number_of_shards": number_of_shards,
-                "number_of_replicas": number_of_replicas
+                "number_of_replicas": number_of_replicas,
             }
         },
         "mappings": {
             "activity": {
                 "properties": {
-                    "published": {
-                        "type": "date"
-                    },
-                    "published_date": {
-                        "type": "date",
-                        "format": "yyyy-MM-dd"
-                    },
-                    "published_time": {
-                        "type": "date",
-                        "format": "HH:mm:ss"
-                    },
-                    "published_year": {
-                        "type": "integer"
-                    },
-                    "published_month": {
-                        "type": "integer"
-                    },
-                    "type": {
-                        "type": "keyword"
-                    },
+                    "published": {"type": "date"},
+                    "published_date": {"type": "date", "format": "yyyy-MM-dd"},
+                    "published_time": {"type": "date", "format": "HH:mm:ss"},
+                    "published_year": {"type": "integer"},
+                    "published_month": {"type": "integer"},
+                    "type": {"type": "keyword"},
                     "actor": {
                         "properties": {
-                            "id": {
-                                "type": "keyword"
-                            },
-                            "type": {
-                                "type": "keyword"
-                            },
-                            "extra": {
-                                "type": "object",
-                                "enabled": "false"
-                            }
+                            "id": {"type": "keyword"},
+                            "type": {"type": "keyword"},
+                            "extra": {"type": "object", "enabled": "false"},
                         }
                     },
                     "object": {
                         "properties": {
-                            "id": {
-                                "type": "keyword"
-                            },
-                            "type": {
-                                "type": "keyword"
-                            },
-                            "extra": {
-                                "type": "object",
-                                "enabled": "false"
-                            }
+                            "id": {"type": "keyword"},
+                            "type": {"type": "keyword"},
+                            "extra": {"type": "object", "enabled": "false"},
                         }
                     },
                     "origin": {
                         "properties": {
-                            "id": {
-                                "type": "keyword",
-                            },
-                            "type": {
-                                "type": "keyword"
-                            },
-                            "extra": {
-                                "type": "object",
-                                "enabled": "false"
-                            }
+                            "id": {"type": "keyword"},
+                            "type": {"type": "keyword"},
+                            "extra": {"type": "object", "enabled": "false"},
                         }
                     },
                     "target": {
                         "properties": {
-                            "id": {
-                                "type": "keyword",
-                            },
-                            "type": {
-                                "type": "keyword"
-                            },
-                            "extra": {
-                                "type": "object",
-                                "enabled": "false"
-                            }
+                            "id": {"type": "keyword"},
+                            "type": {"type": "keyword"},
+                            "extra": {"type": "object", "enabled": "false"},
                         }
                     },
-                    "extra": {
-                        "type": "object",
-                        "enabled": "false"
-                    }
+                    "extra": {"type": "object", "enabled": "false"},
                 }
             }
-        }
+        },
     }
     return _json
 
@@ -207,44 +168,27 @@ def _get_network_index_definition(number_of_shards, number_of_replicas):
         "settings": {
             "index": {
                 "number_of_shards": number_of_shards,
-                "number_of_replicas": number_of_replicas
+                "number_of_replicas": number_of_replicas,
             }
         },
         "mappings": {
             "link": {
                 "properties": {
-                    "linked": {
-                        "type": "date"
-                    },
-                    "actor_id": {
-                        "type": "keyword"
-                    },
-                    "link_type": {
-                        "type": "keyword"
-                    },
+                    "linked": {"type": "date"},
+                    "actor_id": {"type": "keyword"},
+                    "link_type": {"type": "keyword"},
                     "linked_activity": {
                         "properties": {
-                            "activity_class": {
-                                "type": "keyword"
-                            },
-                            "id": {
-                                "type": "keyword"
-                            },
-                            "type": {
-                                "type": "keyword"
-                            }
+                            "activity_class": {"type": "keyword"},
+                            "id": {"type": "keyword"},
+                            "type": {"type": "keyword"},
                         }
                     },
-                    "link_weight": {
-                        "type": "float"
-                    },
-                    "extra": {
-                        "type": "object",
-                        "enabled": "false"
-                    }
+                    "link_weight": {"type": "float"},
+                    "extra": {"type": "object", "enabled": "false"},
                 }
             }
-        }
+        },
     }
     return _json
 
@@ -253,21 +197,22 @@ class Manager(object):
     """
     The Manager class handles all activity feed operations.
     """
+
     def create_connection(self):
         """
         Creates a connection to ElasticSearch and pings it.
         :return: A tested (pinged) connection to ElasticSearch
         """
         if not isinstance(self.port, int):
-            raise ValueError('Port must be an integer')
+            raise ValueError("Port must be an integer")
         if not isinstance(self.host, str):
-            raise ValueError('Host must be string')
+            raise ValueError("Host must be string")
         if self.url_prefix is not None:
             if not isinstance(self.url_prefix, str):
-                raise ValueError('URL prefix must be string')
+                raise ValueError("URL prefix must be string")
         if not isinstance(self.use_ssl, bool):
-            raise ValueError('Use SSL must be boolean')
-        cnt_params = {'host': self.host, 'port': self.port}
+            raise ValueError("Use SSL must be boolean")
+        cnt_params = {"host": self.host, "port": self.port}
         if self.url_prefix is not None:
             cnt_params["url_prefix"] = self.url_prefix
         if self.use_ssl:
@@ -278,10 +223,22 @@ class Manager(object):
         else:
             return None
 
-    def __init__(self, feed_index='feeds', network_index='network', host='localhost', port=9200, url_prefix=None,
-                 use_ssl=False, number_of_shards_in_feeds=5, number_of_replicas_in_feeds=1,
-                 number_of_shards_in_network=5, number_of_replicas_in_network=1, delete_feeds_if_exists=False,
-                 delete_network_if_exists=False, max_link_size=1000):
+    def __init__(
+        self,
+        feed_index="feeds",
+        network_index="network",
+        host="localhost",
+        port=9200,
+        url_prefix=None,
+        use_ssl=False,
+        number_of_shards_in_feeds=5,
+        number_of_replicas_in_feeds=1,
+        number_of_shards_in_network=5,
+        number_of_replicas_in_network=1,
+        delete_feeds_if_exists=False,
+        delete_network_if_exists=False,
+        max_link_size=1000,
+    ):
         """
         The constructor of the Manager. It creates the feeds and network indices if they don't exist. See
         https://www.elastic.co/guide/en/elasticsearch/reference/current/_basic_concepts.html#getting-started-shards-and-replicas
@@ -310,40 +267,58 @@ class Manager(object):
 
         connection = self.create_connection()
         if connection is not None:
-            try:
-                connection.indices.create(feed_index, body=_get_feed_index_definition(number_of_shards_in_feeds,
-                                                                                      number_of_replicas_in_feeds))
-            except RequestError as e:
-                if e.status_code == 400:
-                    if e.error.find('already_exists') >= 0:
-                        if delete_feeds_if_exists:
-                            self.delete_feeds_index()
-                            connection.indices.create(feed_index,
-                                                      body=_get_feed_index_definition(number_of_shards_in_feeds,
-                                                                                      number_of_replicas_in_feeds))
+            if not connection.indices.exists(feed_index):
+                try:
+                    connection.indices.create(
+                        feed_index,
+                        body=_get_feed_index_definition(
+                            number_of_shards_in_feeds, number_of_replicas_in_feeds
+                        ),
+                    )
+                except RequestError as e:
+                    if e.status_code == 400:
+                        if e.error.find("already_exists") >= 0:
+                            if delete_feeds_if_exists:
+                                self.delete_feeds_index()
+                                connection.indices.create(
+                                    feed_index,
+                                    body=_get_feed_index_definition(
+                                        number_of_shards_in_feeds,
+                                        number_of_replicas_in_feeds,
+                                    ),
+                                )
+                            else:
+                                pass
                         else:
-                            pass
+                            raise e
                     else:
                         raise e
-                else:
-                    raise e
-            try:
-                connection.indices.create(network_index, body=_get_network_index_definition(
-                    number_of_shards_in_network, number_of_replicas_in_network))
-            except RequestError as e:
-                if e.status_code == 400:
-                    if e.error.find('already_exists') >= 0:
-                        if delete_network_if_exists:
-                            self.delete_network_index()
-                            connection.indices.create(network_index,
-                                                      body=_get_network_index_definition(number_of_shards_in_network,
-                                                                                         number_of_replicas_in_network))
+            if not connection.indices.exists(network_index):
+                try:
+                    connection.indices.create(
+                        network_index,
+                        body=_get_network_index_definition(
+                            number_of_shards_in_network, number_of_replicas_in_network
+                        ),
+                    )
+                except RequestError as e:
+                    if e.status_code == 400:
+                        if e.error.find("already_exists") >= 0:
+                            if delete_network_if_exists:
+                                self.delete_network_index()
+                                connection.indices.create(
+                                    network_index,
+                                    body=_get_network_index_definition(
+                                        number_of_shards_in_network,
+                                        number_of_replicas_in_network,
+                                    ),
+                                )
+                            else:
+                                pass
                         else:
-                            pass
+                            raise e
                     else:
                         raise e
-                else:
-                    raise e
         else:
             raise RequestError("Cannot connect to ElasticSearch")
 
@@ -393,8 +368,10 @@ class Manager(object):
             raise LinkObjectError()
         connection = self.create_connection()
         if connection is not None:
-            res = connection.search(index=self.network_index, body=link_object.get_search_dict())
-            if res['hits']['total'] > 0:
+            res = connection.search(
+                index=self.network_index, body=link_object.get_search_dict()
+            )
+            if res["hits"]["total"] > 0:
                 return True
         else:
             raise RequestError("Cannot connect to ElasticSearch")
@@ -412,8 +389,12 @@ class Manager(object):
             connection = self.create_connection()
             if connection is not None:
                 unique_id = str(uuid.uuid4())
-                connection.index(index=self.network_index, doc_type='link', id=unique_id,
-                                 body=link_object.get_dict())
+                connection.index(
+                    index=self.network_index,
+                    doc_type="link",
+                    id=unique_id,
+                    body=link_object.get_dict(),
+                )
                 return unique_id
             else:
                 raise RequestError("Cannot connect to ElasticSearch")
@@ -431,8 +412,11 @@ class Manager(object):
         if self.link_network_exists(link_object):
             connection = self.create_connection()
             if connection is not None:
-                connection.delete_by_query(index=self.network_index, doc_type='link',
-                                           body=link_object.get_search_dict())
+                connection.delete_by_query(
+                    index=self.network_index,
+                    doc_type="link",
+                    body=link_object.get_search_dict(),
+                )
                 return True
             else:
                 raise RequestError("Cannot connect to ElasticSearch")
@@ -471,8 +455,8 @@ class Manager(object):
         :param linked: Datetime of the link
         :return: None
         """
-        a_linked_activity = LinkedActivity(watch_id, 'object', watch_type)
-        a_link = Link(actor_id, a_linked_activity, linked=linked, link_type='watch')
+        a_linked_activity = LinkedActivity(watch_id, "object", watch_type)
+        a_link = Link(actor_id, a_linked_activity, linked=linked, link_type="watch")
         self.add_network_link(a_link)
 
     def un_watch(self, actor_id, watch_id, watch_type):
@@ -483,8 +467,8 @@ class Manager(object):
         :param watch_type: The object type that is being un-watched
         :return: Bool
         """
-        a_linked_activity = LinkedActivity(watch_id, 'object', watch_type)
-        a_link = Link(actor_id, a_linked_activity, link_type='watch')
+        a_linked_activity = LinkedActivity(watch_id, "object", watch_type)
+        a_link = Link(actor_id, a_linked_activity, link_type="watch")
         return self.remove_network_link(a_link)
 
     def add_activity_feed(self, activity_object):
@@ -498,8 +482,12 @@ class Manager(object):
         connection = self.create_connection()
         if connection is not None:
             unique_id = str(uuid.uuid4())
-            connection.index(index=self.feed_index, doc_type='activity', id=unique_id,
-                             body=activity_object.get_dict())
+            connection.index(
+                index=self.feed_index,
+                doc_type="activity",
+                id=unique_id,
+                body=activity_object.get_dict(),
+            )
             return unique_id
         else:
             raise RequestError("Cannot connect to ElasticSearch")
@@ -512,22 +500,8 @@ class Manager(object):
         """
         _dict = {
             "size": self.max_link_size,
-            "query": {
-                "bool": {
-                    "must": {
-                        "term": {
-                            "actor_id": actor_id
-                        }
-                    }
-                }
-            },
-            "sort": [
-                {
-                    "linked": {
-                        "order": "desc"
-                    }
-                }
-            ]
+            "query": {"bool": {"must": {"term": {"actor_id": actor_id}}}},
+            "sort": [{"linked": {"order": "desc"}}],
         }
         return _dict
 
@@ -539,10 +513,12 @@ class Manager(object):
         result = []
         connection = self.create_connection()
         if connection is not None:
-            es_result = connection.search(index=self.network_index, body=self.get_search_dict(actor_id))
-            if es_result['hits']['total'] > 0:
-                for hit in es_result['hits']['hits']:
-                    result.append(hit['_source'])
+            es_result = connection.search(
+                index=self.network_index, body=self.get_search_dict(actor_id)
+            )
+            if es_result["hits"]["total"] > 0:
+                for hit in es_result["hits"]["hits"]:
+                    result.append(hit["_source"])
             return result
         else:
             raise RequestError("Cannot connect to ElasticSearch")

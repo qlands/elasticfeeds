@@ -1,9 +1,15 @@
 import datetime
-from elasticfeeds.exceptions import KeyWordError, ExtraTypeError, WeightTypeError, IDError, LinkedTypeError, \
-    LinkedActivityObjectError
+from elasticfeeds.exceptions import (
+    KeyWordError,
+    ExtraTypeError,
+    WeightTypeError,
+    IDError,
+    LinkedTypeError,
+    LinkedActivityObjectError,
+)
 from .activity import LinkedActivity
 
-__all__ = ['Link']
+__all__ = ["Link"]
 
 
 class Link(object):
@@ -11,8 +17,16 @@ class Link(object):
     Link represents a connection in the network of a person. A person can be connected to a another person (follow),
     or connected to things (watch)
     """
-    def __init__(self, actor_id, linked_activity, linked=datetime.datetime.now(), link_type='follow', link_weight=1,
-                 extra=None):
+
+    def __init__(
+        self,
+        actor_id,
+        linked_activity,
+        linked=datetime.datetime.now(),
+        link_type="follow",
+        link_weight=1,
+        extra=None,
+    ):
         """
         Initialize the Link
         :param actor_id: Actor ID who's link is being declared
@@ -159,16 +173,8 @@ class Link(object):
             "query": {
                 "bool": {
                     "must": [
-                        {
-                            "term": {
-                                "actor_id": self.actor_id
-                            }
-                        },
-                        {
-                            "term": {
-                                "link_type": self.link_type
-                            }
-                        },
+                        {"term": {"actor_id": self.actor_id}},
+                        {"term": {"link_type": self.link_type}},
                         {
                             "term": {
                                 "linked_activity.activity_class": self.linked_activity.activity_class
@@ -183,7 +189,7 @@ class Link(object):
                             "term": {
                                 "linked_activity.id": self.linked_activity.activity_id
                             }
-                        }
+                        },
                     ]
                 }
             }

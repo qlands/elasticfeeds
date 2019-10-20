@@ -1,6 +1,6 @@
 from elasticfeeds.exceptions import IDError, OrderError, SizeError, FromError
 
-__all__ = ['BaseAggregator']
+__all__ = ["BaseAggregator"]
 
 
 class BaseAggregator(object):
@@ -8,6 +8,7 @@ class BaseAggregator(object):
     Base aggregator. Performs the basic operations of an aggregator. Sub-classes must implement how the aggregation
     works (set_aggregation_section) and how the results are returned (get_feeds).
     """
+
     def __init__(self, actor_id):
         """
         Initialize the base aggregator
@@ -22,9 +23,13 @@ class BaseAggregator(object):
         self._connection = None
         self._feed_index = None
         self._network_array = []
-        self.query_dict = None  #: The query dict that ES will execute to fetch activity feeds
-        self.es_feed_result = None  #: The fetched activity feeds by ES. Used by subclasses in get_feeds()
-        self._order = 'desc'  #: Order is descending at start
+        self.query_dict = (
+            None
+        )  #: The query dict that ES will execute to fetch activity feeds
+        self.es_feed_result = (
+            None
+        )  #: The fetched activity feeds by ES. Used by subclasses in get_feeds()
+        self._order = "desc"  #: Order is descending at start
         self._result_size = 10000  #: Result size is 10000 records at start
         self._result_from = 0  #: From is 0 at start
         self._top_hits_size = 100  #: Top hits size is 100 at start
@@ -122,7 +127,7 @@ class BaseAggregator(object):
 
     @order.setter
     def order(self, value):
-        if value == 'asc' or value == 'desc':
+        if value == "asc" or value == "desc":
             self._order = value
         else:
             raise OrderError()
@@ -140,11 +145,7 @@ class BaseAggregator(object):
         self._network_array = value
 
     def get_sort_array(self):
-        result = [{
-                        "published": {
-                            "order": self.order
-                        }
-                    }]
+        result = [{"published": {"order": self.order}}]
         return result
 
     def set_query_dict(self):
@@ -153,27 +154,15 @@ class BaseAggregator(object):
         """
         should = []
         for link in self.network_array:
-            since = link['linked']
-            linked_activity = link['linked_activity']
-            if linked_activity['activity_class'] == 'actor':
+            since = link["linked"]
+            linked_activity = link["linked_activity"]
+            if linked_activity["activity_class"] == "actor":
                 should_item = {
                     "bool": {
                         "must": [
-                            {
-                                "term": {
-                                    "actor.id": linked_activity['id']
-                                }
-                            },
-                            {
-                                "term": {
-                                    "actor.type": linked_activity['type']
-                                }
-                            },
-                            {
-                                "range": {
-                                    "published": {"gte": since}
-                                }
-                            }
+                            {"term": {"actor.id": linked_activity["id"]}},
+                            {"term": {"actor.type": linked_activity["type"]}},
+                            {"range": {"published": {"gte": since}}},
                         ]
                     }
                 }
@@ -182,21 +171,9 @@ class BaseAggregator(object):
                 should_item = {
                     "bool": {
                         "must": [
-                            {
-                                "term": {
-                                    "object.id": linked_activity['id']
-                                }
-                            },
-                            {
-                                "term": {
-                                    "object.type": linked_activity['type']
-                                }
-                            },
-                            {
-                                "range": {
-                                    "published": {"gte": since}
-                                }
-                            }
+                            {"term": {"object.id": linked_activity["id"]}},
+                            {"term": {"object.type": linked_activity["type"]}},
+                            {"range": {"published": {"gte": since}}},
                         ]
                     }
                 }
@@ -204,41 +181,27 @@ class BaseAggregator(object):
                 should_item = {
                     "bool": {
                         "must": [
-                            {
-                                "term": {
-                                    "target.id": linked_activity['id']
-                                }
-                            },
-                            {
-                                "term": {
-                                    "target.type": linked_activity['type']
-                                }
-                            },
-                            {
-                                "range": {
-                                    "published": {"gte": since}
-                                }
-                            }
+                            {"term": {"target.id": linked_activity["id"]}},
+                            {"term": {"target.type": linked_activity["type"]}},
+                            {"range": {"published": {"gte": since}}},
                         ]
                     }
                 }
                 should.append(should_item)
         if len(should) > 0:
             self.query_dict = {
-                "query": {
-                    "bool": {
-                        "should": should
-                    }
-                },
-                "sort": self.get_sort_array()
+                "query": {"bool": {"should": should}},
+                "sort": self.get_sort_array(),
             }
         else:
             self.query_dict = None
 
     def query_feeds(self):
         if self.connection is not None:
-            es_result = self.connection.search(index=self.feed_index, body=self.query_dict)
-            if es_result['hits']['total'] > 0:
+            es_result = self.connection.search(
+                index=self.feed_index, body=self.query_dict
+            )
+            if es_result["hits"]["total"] > 0:
                 self.es_feed_result = es_result
 
     def set_aggregation_section(self):
@@ -246,7 +209,9 @@ class BaseAggregator(object):
         Reimplemented by subclasses, this function should set the 'aggs' section in self.query_dict by doing
         self.query_dict['aggs'] = {aggregation_dict}
         """
-        raise NotImplementedError("set_aggregation_section must be implemented in subclasses")
+        raise NotImplementedError(
+            "set_aggregation_section must be implemented in subclasses"
+        )
 
     def get_feeds(self):
         """
