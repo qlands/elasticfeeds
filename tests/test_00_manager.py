@@ -16,17 +16,22 @@ def test_manager():
     ready = False
     print("Waiting for ES to be ready")
     while not ready:
-        if use_ssl == "False":
-            resp = requests.get("http://{}:{}/_cluster/health".format(es_host, es_port))
-        else:
-            resp = requests.get(
-                "https://{}:{}/_cluster/health".format(es_host, es_port)
-            )
-        data = resp.json()
-        if data["status"] == "yellow" or data["status"] == "green":
-            ready = True
-        else:
+        try:
+            if use_ssl == "False":
+                resp = requests.get("http://{}:{}/_cluster/health".format(es_host, es_port))
+            else:
+                resp = requests.get(
+                    "https://{}:{}/_cluster/health".format(es_host, es_port)
+                )
+            data = resp.json()
+            if data["status"] == "yellow" or data["status"] == "green":
+                ready = True
+            else:
+                time.sleep(30)
+        except Exception as e:
+            print(str(e))
             time.sleep(30)
+
     print("ES is ready")
 
     now = datetime.datetime.now()
