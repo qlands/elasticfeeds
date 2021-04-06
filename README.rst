@@ -11,7 +11,7 @@ A python library to manage notification and activity feeds using ElasticSearch a
 Description
 ===========
 
-A few months ago, I started to work on a social media platform in Python with Pyramid and I had to get my hands into handling activity feeds. After searching the internet for possible Python frameworks, I realized that those well maintained (`Django Activity Stream <https://django-activity-stream.readthedocs.io/en/latest/index.html>`_ and `Stream Framework <https://github.com/tschellenbach/Stream-Framework>`_) were very oriented to Django (which I hate). Furthermore, both frameworks use asynchronous tasks to perform “fan-out on write” operations which I think is an overkill if you consider a user like @katyperry with 107,805,373 followers.
+Few years ago, I started to work on `FormShare <https://github.com/qlands/FormShare>`_, a platform in Python with Pyramid with Social Media features, and I had to get my hands into handling activity feeds. After searching the internet for possible Python frameworks, I realized that those well maintained (`Django Activity Stream <https://django-activity-stream.readthedocs.io/en/latest/index.html>`_ and `Stream Framework <https://github.com/tschellenbach/Stream-Framework>`_) were very oriented to Django (which I hate). Furthermore, both frameworks use asynchronous tasks to perform “fan-out on write” operations which I think is an overkill if you consider a user like @katyperry with 107,805,373 followers.
 
 Later, I encounter a post in StackOverflow on "`Creating a SOLR index for activity stream or newsfeed <https://stackoverflow.com/questions/44468264/creating-a-solr-index-for-activity-stream-or-newsfeed#comment91900926_44468264>`_" which attached a presentation on "`A news feed with ElasticSearch <http://www.quentinsuire.com/presentations/a-news-feed-with-elasticsearch/#/>`_". The authors explain how to use `ElasticSearch <https://www.elastic.co/products/elasticsearch>`_ to create “fan-out on read” by “Storing atomic news and compose a news feed at the query time”.
 
@@ -23,7 +23,7 @@ Handling feeds in ElasticSearch and write aggregation queries is something that 
 Requirements
 ============
 
-* ElasticSearch >= 6.0.0
+* ElasticSearch >= 6.8.X
 
 Usage
 =====
@@ -44,8 +44,9 @@ Usage
     $ sudo apt-get install docker docker-compose
     $ cd elasticsearch_docker
     $ sudo docker-compose up
-    
-    This will start a 3 node ElasticSearch (6.3.2) in port 9200 with Kibana in port 5601.
+
+    This will start a 3 node ElasticSearch (6.8.14) in port 9200 with Kibana in port 5601.
+
     If ElasticSearch fails to start due to "max virtual memory error" shutdown the docker (Ctrl+c) and do:
     
     $ sudo sysctl -w vm.max_map_count=262144
