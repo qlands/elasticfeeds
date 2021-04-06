@@ -270,6 +270,7 @@ class Manager(object):
                         body=_get_feed_index_definition(
                             number_of_shards_in_feeds, number_of_replicas_in_feeds
                         ),
+                        params={"include_type_name": "false"}
                     )
                 except RequestError as e:
                     if e.status_code == 400:
@@ -282,6 +283,7 @@ class Manager(object):
                                         number_of_shards_in_feeds,
                                         number_of_replicas_in_feeds,
                                     ),
+                                    params={"include_type_name": "false"}
                                 )
                             else:
                                 pass
@@ -296,6 +298,7 @@ class Manager(object):
                         body=_get_network_index_definition(
                             number_of_shards_in_network, number_of_replicas_in_network
                         ),
+                        params={"include_type_name": "false"}
                     )
                 except RequestError as e:
                     if e.status_code == 400:
@@ -308,6 +311,7 @@ class Manager(object):
                                         number_of_shards_in_network,
                                         number_of_replicas_in_network,
                                     ),
+                                    params={"include_type_name": "false"}
                                 )
                             else:
                                 pass
