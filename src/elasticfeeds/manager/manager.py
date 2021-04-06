@@ -132,35 +132,35 @@ def _get_feed_index_definition(number_of_shards, number_of_replicas):
 
 def _get_network_index_definition(number_of_shards, number_of_replicas):
     """
-       Constructs the Network index with a given number of shards and replicas.
-       Each connection is stored as individual ES documents
-       :param number_of_shards: Number of shards for the network index.
-       :param number_of_replicas: Number of replicas for the network index.
+    Constructs the Network index with a given number of shards and replicas.
+    Each connection is stored as individual ES documents
+    :param number_of_shards: Number of shards for the network index.
+    :param number_of_replicas: Number of replicas for the network index.
 
-       The index has the following parts:
-            linked: Date when the link was made. Stored in ISO 8601 format.
-                   See https://docs.python.org/3.6/library/datetime.html#datetime.date.isoformat for more info.
-            actor_id: Single word. The actor who's connection is being declared. For example if the actor "mark" is
-                                   following two people then "mark" would appear twice, one per connection.
-            link_type: Single word in infinitive. The kind of link being declared. For example: Follow, Watch
+    The index has the following parts:
+         linked: Date when the link was made. Stored in ISO 8601 format.
+                See https://docs.python.org/3.6/library/datetime.html#datetime.date.isoformat for more info.
+         actor_id: Single word. The actor who's connection is being declared. For example if the actor "mark" is
+                                following two people then "mark" would appear twice, one per connection.
+         link_type: Single word in infinitive. The kind of link being declared. For example: Follow, Watch
 
-            linked_activity: Linked activity to this link in the network
-            linked_activity.activity_class: Single word. The type of activities that are being followed and watched.
-                                            This must be either "actor" or "object"
-            linked_activity.type: Single word. The type of feed component that is being followed or watched. For example
-                                  if the class is "actor" then it's type could be "Person", "User" or "Member".
-                                  If the class is "object" then its type could be "Document", or "Project".
-            linked_activity.id: Single ID. The ID that is being followed or watched.
+         linked_activity: Linked activity to this link in the network
+         linked_activity.activity_class: Single word. The type of activities that are being followed and watched.
+                                         This must be either "actor" or "object"
+         linked_activity.type: Single word. The type of feed component that is being followed or watched. For example
+                               if the class is "actor" then it's type could be "Person", "User" or "Member".
+                               If the class is "object" then its type could be "Document", or "Project".
+         linked_activity.id: Single ID. The ID that is being followed or watched.
 
-            link_weight: Numeric. Accept decimals. The wight of the connection. For example, if Mark follows Jane and
-                         Katie depending on their interaction in social platform the connection between Mark and Jane
-                         could be twice as strong as Mark and Katie, thus Mark and Katie will have a weight of 1 while
-                         Mark and Jane will have a weight of 2. By default each connection has a weight of 1.
-            extra: Use this field to store extra information at link level.
-                   IMPORTANT NOTE: This field is "non-analyzable" which means that ES does not perform any
-                   operations on it thus it cannot be used to order, aggregate, or filter query results.
+         link_weight: Numeric. Accept decimals. The wight of the connection. For example, if Mark follows Jane and
+                      Katie depending on their interaction in social platform the connection between Mark and Jane
+                      could be twice as strong as Mark and Katie, thus Mark and Katie will have a weight of 1 while
+                      Mark and Jane will have a weight of 2. By default each connection has a weight of 1.
+         extra: Use this field to store extra information at link level.
+                IMPORTANT NOTE: This field is "non-analyzable" which means that ES does not perform any
+                operations on it thus it cannot be used to order, aggregate, or filter query results.
 
-       :return: A JSON object with the definition of the Network index.
+    :return: A JSON object with the definition of the Network index.
     """
     _json = {
         "settings": {
@@ -270,7 +270,7 @@ class Manager(object):
                         body=_get_feed_index_definition(
                             number_of_shards_in_feeds, number_of_replicas_in_feeds
                         ),
-                        params={"include_type_name": "false"}
+                        params={"include_type_name": "false"},
                     )
                 except RequestError as e:
                     if e.status_code == 400:
@@ -283,7 +283,7 @@ class Manager(object):
                                         number_of_shards_in_feeds,
                                         number_of_replicas_in_feeds,
                                     ),
-                                    params={"include_type_name": "false"}
+                                    params={"include_type_name": "false"},
                                 )
                             else:
                                 pass
@@ -298,7 +298,7 @@ class Manager(object):
                         body=_get_network_index_definition(
                             number_of_shards_in_network, number_of_replicas_in_network
                         ),
-                        params={"include_type_name": "false"}
+                        params={"include_type_name": "false"},
                     )
                 except RequestError as e:
                     if e.status_code == 400:
@@ -311,7 +311,7 @@ class Manager(object):
                                         number_of_shards_in_network,
                                         number_of_replicas_in_network,
                                     ),
-                                    params={"include_type_name": "false"}
+                                    params={"include_type_name": "false"},
                                 )
                             else:
                                 pass
@@ -347,7 +347,9 @@ class Manager(object):
             return True
         return False
 
-    def delete_network_index(self,):
+    def delete_network_index(
+        self,
+    ):
         """
         Deleted the network index
         :return: True if the index was deleted successfully

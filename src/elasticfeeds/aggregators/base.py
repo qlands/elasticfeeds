@@ -24,11 +24,11 @@ class BaseAggregator(object):
         self._feed_index = None
         self._network_array = []
         self.query_dict = (
-            None
-        )  #: The query dict that ES will execute to fetch activity feeds
+            None  #: The query dict that ES will execute to fetch activity feeds
+        )
         self.es_feed_result = (
-            None
-        )  #: The fetched activity feeds by ES. Used by subclasses in get_feeds()
+            None  #: The fetched activity feeds by ES. Used by subclasses in get_feeds()
+        )
         self._order = "desc"  #: Order is descending at start
         self._result_size = 10000  #: Result size is 10000 records at start
         self._result_from = 0  #: From is 0 at start

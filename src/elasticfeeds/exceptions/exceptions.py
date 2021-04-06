@@ -32,7 +32,7 @@ class ElasticFeedException(Exception):
 
 class KeyWordError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks keywords for special characters.
+    Exception raised when ElasticFeeds checks keywords for special characters.
     """
 
     @property
@@ -49,7 +49,7 @@ class KeyWordError(ElasticFeedException):
 
 class ExtraTypeError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether extra is a dict.
+    Exception raised when ElasticFeeds checks whether extra is a dict.
     """
 
     def __str__(self):
@@ -58,7 +58,7 @@ class ExtraTypeError(ElasticFeedException):
 
 class WeightTypeError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether weight is integer or float.
+    Exception raised when ElasticFeeds checks whether weight is integer or float.
     """
 
     def __str__(self):
@@ -67,7 +67,7 @@ class WeightTypeError(ElasticFeedException):
 
 class LinkedTypeError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether linked is datetime.
+    Exception raised when ElasticFeeds checks whether linked is datetime.
     """
 
     def __str__(self):
@@ -76,7 +76,7 @@ class LinkedTypeError(ElasticFeedException):
 
 class IDError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether IDs have space.
+    Exception raised when ElasticFeeds checks whether IDs have space.
     """
 
     def __str__(self):
@@ -85,7 +85,7 @@ class IDError(ElasticFeedException):
 
 class LinkObjectError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether a link object is class Link.
+    Exception raised when ElasticFeeds checks whether a link object is class Link.
     """
 
     def __str__(self):
@@ -94,7 +94,7 @@ class LinkObjectError(ElasticFeedException):
 
 class LinkExistError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether a link object already exists in network.
+    Exception raised when ElasticFeeds checks whether a link object already exists in network.
     """
 
     def __str__(self):
@@ -103,7 +103,7 @@ class LinkExistError(ElasticFeedException):
 
 class LinkNotExistError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether a link object does not exists in network.
+    Exception raised when ElasticFeeds checks whether a link object does not exists in network.
     """
 
     def __str__(self):
@@ -112,7 +112,7 @@ class LinkNotExistError(ElasticFeedException):
 
 class ActorObjectError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether an actor object is class Actor.
+    Exception raised when ElasticFeeds checks whether an actor object is class Actor.
     """
 
     def __str__(self):
@@ -121,7 +121,7 @@ class ActorObjectError(ElasticFeedException):
 
 class ObjectObjectError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether an object object is class Object.
+    Exception raised when ElasticFeeds checks whether an object object is class Object.
     """
 
     def __str__(self):
@@ -130,7 +130,7 @@ class ObjectObjectError(ElasticFeedException):
 
 class OriginObjectError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether an origin object is class Origin.
+    Exception raised when ElasticFeeds checks whether an origin object is class Origin.
     """
 
     def __str__(self):
@@ -139,7 +139,7 @@ class OriginObjectError(ElasticFeedException):
 
 class TargetObjectError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether an origin object is class Target.
+    Exception raised when ElasticFeeds checks whether an origin object is class Target.
     """
 
     def __str__(self):
@@ -148,7 +148,7 @@ class TargetObjectError(ElasticFeedException):
 
 class PublishedTypeError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether published is datetime.
+    Exception raised when ElasticFeeds checks whether published is datetime.
     """
 
     def __str__(self):
@@ -157,7 +157,7 @@ class PublishedTypeError(ElasticFeedException):
 
 class ActivityObjectError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether an activity object is class Activity.
+    Exception raised when ElasticFeeds checks whether an activity object is class Activity.
     """
 
     def __str__(self):
@@ -166,7 +166,7 @@ class ActivityObjectError(ElasticFeedException):
 
 class LinkedActivityObjectError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether an linked activity object is class LinkedActivity.
+    Exception raised when ElasticFeeds checks whether an linked activity object is class LinkedActivity.
     """
 
     def __str__(self):
@@ -175,7 +175,7 @@ class LinkedActivityObjectError(ElasticFeedException):
 
 class MaxLinkError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether max_link_size is integer.
+    Exception raised when ElasticFeeds checks whether max_link_size is integer.
     """
 
     def __str__(self):
@@ -184,7 +184,7 @@ class MaxLinkError(ElasticFeedException):
 
 class AggregatorObjectError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether an aggregator object is class Aggregator.
+    Exception raised when ElasticFeeds checks whether an aggregator object is class Aggregator.
     """
 
     def __str__(self):
@@ -193,7 +193,7 @@ class AggregatorObjectError(ElasticFeedException):
 
 class ActivityClassError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether an linked activity class is actor or object.
+    Exception raised when ElasticFeeds checks whether an linked activity class is actor or object.
     """
 
     def __str__(self):
@@ -202,7 +202,7 @@ class ActivityClassError(ElasticFeedException):
 
 class OrderError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether the order is asc or desc.
+    Exception raised when ElasticFeeds checks whether the order is asc or desc.
     """
 
     def __str__(self):
@@ -211,7 +211,7 @@ class OrderError(ElasticFeedException):
 
 class SizeError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether the size is integer.
+    Exception raised when ElasticFeeds checks whether the size is integer.
     """
 
     def __str__(self):
@@ -220,7 +220,7 @@ class SizeError(ElasticFeedException):
 
 class FromError(ElasticFeedException):
     """
-        Exception raised when ElasticFeeds checks whether the from is integer.
+    Exception raised when ElasticFeeds checks whether the from is integer.
     """
 
     def __str__(self):
