@@ -1,4 +1,4 @@
-|build-status| |coverage|
+![](https://travis-ci.com/qlands/elasticfeeds.svg?branch=master) |coverage|
 
 ============
 ElasticFeeds
@@ -44,10 +44,10 @@ Usage
     $ sudo apt-get install docker docker-compose
     $ cd elasticsearch_docker
     $ sudo docker-compose up
-
+    
     This will start a 3 node ElasticSearch (6.3.2) in port 9200 with Kibana in port 5601.
     If ElasticSearch fails to start due to "max virtual memory error" shutdown the docker (Ctrl+c) and do:
-
+    
     $ sudo sysctl -w vm.max_map_count=262144
     $ sudo sudo docker-compose up
 
@@ -81,7 +81,7 @@ Usage
     my_activity = Activity('add', my_actor, my_project)
     # Store the activity
     my_manager.add_activity_feed(my_activity)
-
+    
     # Create an actor for Mark of type person
     my_actor = Actor('mark', 'person')
     # Create an Object for Project A of type project
