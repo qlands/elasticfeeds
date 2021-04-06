@@ -88,44 +88,42 @@ def _get_feed_index_definition(number_of_shards, number_of_replicas):
             }
         },
         "mappings": {
-            "activity": {
-                "properties": {
-                    "published": {"type": "date"},
-                    "published_date": {"type": "date", "format": "yyyy-MM-dd"},
-                    "published_time": {"type": "date", "format": "HH:mm:ss"},
-                    "published_year": {"type": "integer"},
-                    "published_month": {"type": "integer"},
-                    "type": {"type": "keyword"},
-                    "actor": {
-                        "properties": {
-                            "id": {"type": "keyword"},
-                            "type": {"type": "keyword"},
-                            "extra": {"type": "object", "enabled": "false"},
-                        }
-                    },
-                    "object": {
-                        "properties": {
-                            "id": {"type": "keyword"},
-                            "type": {"type": "keyword"},
-                            "extra": {"type": "object", "enabled": "false"},
-                        }
-                    },
-                    "origin": {
-                        "properties": {
-                            "id": {"type": "keyword"},
-                            "type": {"type": "keyword"},
-                            "extra": {"type": "object", "enabled": "false"},
-                        }
-                    },
-                    "target": {
-                        "properties": {
-                            "id": {"type": "keyword"},
-                            "type": {"type": "keyword"},
-                            "extra": {"type": "object", "enabled": "false"},
-                        }
-                    },
-                    "extra": {"type": "object", "enabled": "false"},
-                }
+            "properties": {
+                "published": {"type": "date"},
+                "published_date": {"type": "date", "format": "yyyy-MM-dd"},
+                "published_time": {"type": "date", "format": "HH:mm:ss"},
+                "published_year": {"type": "integer"},
+                "published_month": {"type": "integer"},
+                "type": {"type": "keyword"},
+                "actor": {
+                    "properties": {
+                        "id": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "extra": {"type": "object", "enabled": "false"},
+                    }
+                },
+                "object": {
+                    "properties": {
+                        "id": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "extra": {"type": "object", "enabled": "false"},
+                    }
+                },
+                "origin": {
+                    "properties": {
+                        "id": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "extra": {"type": "object", "enabled": "false"},
+                    }
+                },
+                "target": {
+                    "properties": {
+                        "id": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                        "extra": {"type": "object", "enabled": "false"},
+                    }
+                },
+                "extra": {"type": "object", "enabled": "false"},
             }
         },
     }
@@ -172,21 +170,19 @@ def _get_network_index_definition(number_of_shards, number_of_replicas):
             }
         },
         "mappings": {
-            "link": {
-                "properties": {
-                    "linked": {"type": "date"},
-                    "actor_id": {"type": "keyword"},
-                    "link_type": {"type": "keyword"},
-                    "linked_activity": {
-                        "properties": {
-                            "activity_class": {"type": "keyword"},
-                            "id": {"type": "keyword"},
-                            "type": {"type": "keyword"},
-                        }
-                    },
-                    "link_weight": {"type": "float"},
-                    "extra": {"type": "object", "enabled": "false"},
-                }
+            "properties": {
+                "linked": {"type": "date"},
+                "actor_id": {"type": "keyword"},
+                "link_type": {"type": "keyword"},
+                "linked_activity": {
+                    "properties": {
+                        "activity_class": {"type": "keyword"},
+                        "id": {"type": "keyword"},
+                        "type": {"type": "keyword"},
+                    }
+                },
+                "link_weight": {"type": "float"},
+                "extra": {"type": "object", "enabled": "false"},
             }
         },
     }
@@ -391,7 +387,7 @@ class Manager(object):
                 unique_id = str(uuid.uuid4())
                 connection.index(
                     index=self.network_index,
-                    doc_type="link",
+                    doc_type="_doc",
                     id=unique_id,
                     body=link_object.get_dict(),
                 )
@@ -414,7 +410,7 @@ class Manager(object):
             if connection is not None:
                 connection.delete_by_query(
                     index=self.network_index,
-                    doc_type="link",
+                    doc_type="_doc",
                     body=link_object.get_search_dict(),
                 )
                 return True
@@ -484,7 +480,7 @@ class Manager(object):
             unique_id = str(uuid.uuid4())
             connection.index(
                 index=self.feed_index,
-                doc_type="activity",
+                doc_type="_doc",
                 id=unique_id,
                 body=activity_object.get_dict(),
             )
