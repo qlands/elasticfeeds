@@ -7,7 +7,10 @@ matrix:
   include:
     - env: DISTRIB="conda" PYTHON_VERSION="3.6" COVERAGE="true"
 before_install:
-  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.8.6.deb && sudo dpkg -i --force-confnew elasticsearch-6.8.6.deb && sudo service elasticsearch restart
+  - curl https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.8.6-amd64.deb -o elasticsearch.deb
+  - sudo dpkg -i --force-confnew elasticsearch.deb
+  - sudo chown -R elasticsearch:elasticsearch /etc/default/elasticsearch
+  - sudo service elasticsearch restart
 install:
   - source tests/travis_install.sh
   - pip install -r requirements.txt
