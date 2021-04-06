@@ -1,4 +1,5 @@
-.. image:: https://travis-ci.com/qlands/elasticfeeds.svg?branch=master |coverage|
+.. image:: https://travis-ci.com/qlands/elasticfeeds.svg?branch=master 
+|coverage|
 
 ============
 ElasticFeeds
