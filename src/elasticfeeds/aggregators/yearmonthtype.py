@@ -176,7 +176,7 @@ class YearMonthTypeAggregator(BaseAggregator):
         :return: Dict array
         """
         result = []
-        if self.es_feed_result["hits"]["total"] > 0:
+        if self.es_feed_result["hits"]["total"]["value"] > 0:
             for a_year in self.es_feed_result["aggregations"]["years"]["buckets"]:
                 _year = {"year": a_year["key"]}
                 month_array = []

@@ -373,7 +373,7 @@ class Manager(object):
             res = connection.search(
                 index=self.network_index, body=link_object.get_search_dict()
             )
-            if res["hits"]["total"] > 0:
+            if res["hits"]["total"]["value"] > 0:
                 return True
         else:
             raise RequestError("Cannot connect to ElasticSearch")
@@ -518,7 +518,7 @@ class Manager(object):
             es_result = connection.search(
                 index=self.network_index, body=self.get_search_dict(actor_id)
             )
-            if es_result["hits"]["total"] > 0:
+            if es_result["hits"]["total"]["value"] > 0:
                 for hit in es_result["hits"]["hits"]:
                     result.append(hit["_source"])
             return result

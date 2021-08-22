@@ -107,7 +107,7 @@ class DateWeightAggregator(BaseAggregator):
         :return: Dict array
         """
         result = []
-        if self.es_feed_result["hits"]["total"] > 0:
+        if self.es_feed_result["hits"]["total"]["value"] > 0:
             for a_date in self.es_feed_result["aggregations"]["dates"]["buckets"]:
                 _dict = {"date": a_date["key_as_string"]}
                 hit_array = []

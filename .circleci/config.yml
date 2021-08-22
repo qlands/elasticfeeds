@@ -1,0 +1,59 @@
+version: 2
+jobs:
+  py-3.8: &build-template
+    docker:
+      - image: python:3.8.11-bullseye
+      - image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
+        environment:
+          - bootstrap.memory_lock=true
+          - discovery.type=single-node
+          - http.host=0.0.0.0
+          - transport.host=127.0.0.1
+          - xpack.security.enabled=false
+          - "ES_JAVA_OPTS=-Xms750m -Xmx750m"
+        ports:
+          - 9200:9200
+    working_directory: ~/work
+    steps:
+      - checkout
+      - restore_cache:
+          key: requirements-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+      - run:
+          # Install dependencies with --user to enable easier caching
+          name: Install dependencies
+          command: |
+            pip install -r requirements.txt --user
+            pip install codecov --user
+            /home/circleci/.local/bin/codecov
+      - run:
+          name: Test code is well formatted
+          command: |
+            /home/circleci/.local/bin/black --version
+            /home/circleci/.local/bin/black elasticfeeds --check || exit;
+      - run:
+          name: Run tests
+          command: |
+            /home/circleci/.local/bin/pytest -s --cov=elasticfeeds
+      - run:
+          name: upload coverage report
+          command: |
+            /home/circleci/.local/bin/coverage xml
+            (/home/circleci/.local/bin/codecov --required -X search gcov pycov -f coverage.xml) || echo 'Codecov failed to upload'
+      - run:
+          name: Building artifacts
+          command: |
+            python3 setup.py sdist
+            python3 setup.py bdist_wheel
+      - store_artifacts:
+          path: dist/
+          destination: ./
+      - save_cache:
+          key: requirements-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}-{{ checksum "requirements.txt" }}
+          paths:
+            - /home/circleci/.local/lib
+            - /home/circleci/.local/bin
+workflows:
+  version: 2
+  build:
+    jobs:
+      - py-3.8

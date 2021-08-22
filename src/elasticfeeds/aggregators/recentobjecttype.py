@@ -72,7 +72,7 @@ class RecentObjectTypeAggregator(BaseAggregator):
         """
         result = []
         # pprint.pprint(self.es_feed_result)
-        if self.es_feed_result["hits"]["total"] > 0:
+        if self.es_feed_result["hits"]["total"]["value"] > 0:
             for an_object in self.es_feed_result["aggregations"]["objects"]["buckets"]:
                 _dict = {"id": an_object["key"]}
                 types_array = []

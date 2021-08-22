@@ -18,7 +18,9 @@ def test_manager():
     while not ready:
         try:
             if use_ssl == "False":
-                resp = requests.get("http://{}:{}/_cluster/health".format(es_host, es_port))
+                resp = requests.get(
+                    "http://{}:{}/_cluster/health".format(es_host, es_port)
+                )
             else:
                 resp = requests.get(
                     "https://{}:{}/_cluster/health".format(es_host, es_port)

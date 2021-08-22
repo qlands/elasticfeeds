@@ -37,7 +37,7 @@ class UnAggregated(BaseAggregator):
         :return: Dict array
         """
         result = []
-        if self.es_feed_result["hits"]["total"] > 0:
+        if self.es_feed_result["hits"]["total"]["value"] > 0:
             for hit in self.es_feed_result["hits"]["hits"]:
                 result.append(hit["_source"])
             return result
