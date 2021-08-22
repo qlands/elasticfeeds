@@ -37,7 +37,7 @@ class KeyWordError(ElasticFeedException):
 
     @property
     def keyword(self):
-        """ A string error message. """
+        """A string error message."""
         return self.args[0]
 
     def __str__(self):
