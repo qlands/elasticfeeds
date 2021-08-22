@@ -1,23 +1,45 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""
-    Setup file for elasticfeeds.
-    Use setup.cfg to configure your project.
+import os
 
-    This file was generated with PyScaffold 3.1.
-    PyScaffold helps you to put up the scaffold of your new Python project.
-    Learn more under: https://pyscaffold.org/
-"""
-import sys
-
-from pkg_resources import require, VersionConflict
 from setuptools import setup
 
-try:
-    require("setuptools>=38.3")
-except VersionConflict:
-    print("Error: version of setuptools is too old (<38.3)!")
-    sys.exit(1)
+here = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(here, "README.md")) as f:
+    README = f.read()
+with open(os.path.join(here, "CHANGELOG.rst")) as f:
+    CHANGES = f.read()
 
-if __name__ == "__main__":
-    setup(use_pyscaffold=True)
+requires = [
+    "elasticsearch",
+    "coverage",
+    "pytest",
+    "pytest-cov",
+    "black",
+    "requests",
+]
+
+packages = ["elasticfeeds"]
+
+tests_require = ["pytest", "pytest-cov"]
+
+setup(
+    name="elasticfeeds",
+    version="1.0.0",
+    description="ElasticFeeds",
+    long_description=README + "\n\n" + CHANGES,
+    classifiers=[
+        "Programming Language :: Python",
+        "Topic :: Internet :: WWW/HTTP",
+        "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+    ],
+    author="Carlos Quiros",
+    author_email="cquiros@qlands.com",
+    url="",
+    keywords="Elasticsearch Feeds",
+    packages=packages,
+    include_package_data=True,
+    package_data={"": ["README.md", "LICENSE.txt"]},
+    package_dir={"elasticfeeds": "elasticfeeds"},
+    zip_safe=False,
+    extras_require={"testing": tests_require},
+    install_requires=requires,
+)
