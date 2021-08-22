@@ -2,7 +2,7 @@ version: 2
 jobs:
   py-3.8: &build-template
     docker:
-      - image: python:3.8.11-bullseye
+      - image: cimg/python:3.8.11
       - image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
         environment:
           - bootstrap.memory_lock=true
