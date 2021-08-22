@@ -1,6 +1,6 @@
 import os
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, "README.md")) as f:
@@ -16,8 +16,6 @@ requires = [
     "black",
     "requests",
 ]
-
-packages = ["elasticfeeds"]
 
 tests_require = ["pytest", "pytest-cov"]
 
@@ -35,7 +33,7 @@ setup(
     author_email="cquiros@qlands.com",
     url="",
     keywords="Elasticsearch Feeds",
-    packages=packages,
+    packages=find_packages(),
     include_package_data=True,
     package_data={"": ["README.md", "LICENSE.txt"]},
     package_dir={"elasticfeeds": "elasticfeeds"},
