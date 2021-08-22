@@ -270,7 +270,6 @@ class Manager(object):
                         body=_get_feed_index_definition(
                             number_of_shards_in_feeds, number_of_replicas_in_feeds
                         ),
-                        params={"include_type_name": "false"},
                     )
                 except RequestError as e:
                     if e.status_code == 400:
@@ -283,7 +282,6 @@ class Manager(object):
                                         number_of_shards_in_feeds,
                                         number_of_replicas_in_feeds,
                                     ),
-                                    params={"include_type_name": "false"},
                                 )
                             else:
                                 pass
@@ -298,7 +296,6 @@ class Manager(object):
                         body=_get_network_index_definition(
                             number_of_shards_in_network, number_of_replicas_in_network
                         ),
-                        params={"include_type_name": "false"},
                     )
                 except RequestError as e:
                     if e.status_code == 400:
@@ -311,7 +308,6 @@ class Manager(object):
                                         number_of_shards_in_network,
                                         number_of_replicas_in_network,
                                     ),
-                                    params={"include_type_name": "false"},
                                 )
                             else:
                                 pass
@@ -393,7 +389,6 @@ class Manager(object):
                 unique_id = str(uuid.uuid4())
                 connection.index(
                     index=self.network_index,
-                    doc_type="_doc",
                     id=unique_id,
                     body=link_object.get_dict(),
                 )
@@ -416,7 +411,6 @@ class Manager(object):
             if connection is not None:
                 connection.delete_by_query(
                     index=self.network_index,
-                    doc_type="_doc",
                     body=link_object.get_search_dict(),
                 )
                 return True
@@ -486,7 +480,6 @@ class Manager(object):
             unique_id = str(uuid.uuid4())
             connection.index(
                 index=self.feed_index,
-                doc_type="_doc",
                 id=unique_id,
                 body=activity_object.get_dict(),
             )
