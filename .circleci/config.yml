@@ -25,6 +25,7 @@ jobs:
             pip install -r requirements.txt --user
             pip install codecov --user
             /home/circleci/.local/bin/codecov
+            python3 setup.py install --user
       - run:
           name: Test code is well formatted
           command: |
