@@ -201,8 +201,7 @@ class BaseAggregator(object):
             es_result = self.connection.search(
                 index=self.feed_index, body=self.query_dict
             )
-            if es_result["hits"]["total"]["value"] > 0:
-                self.es_feed_result = es_result
+            self.es_feed_result = es_result
 
     def set_aggregation_section(self):
         """
