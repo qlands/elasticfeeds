@@ -419,15 +419,24 @@ class Manager(object):
         else:
             raise LinkNotExistError()
 
-    def follow(self, actor_id, following, linked=datetime.datetime.now()):
+    def follow(
+        self,
+        actor_id,
+        following,
+        linked=datetime.datetime.now(),
+        activity_type="person",
+    ):
         """
         A convenience function to declare a follow link
         :param actor_id:  Actor ID who's link is being declared in the network
         :param following: The person that is being followed
         :param linked: Datetime of the link
+        :param activity_type: String. Single word. The type of feed component that is being followed or watched.
+                              For example, if the class is "actor" then it's type could be "Person", "User" or "Member".
+                              If the class is "object" then its type could be "Document", or "Project".
         :return: None
         """
-        a_linked_activity = LinkedActivity(following)
+        a_linked_activity = LinkedActivity(following, activity_type=activity_type)
         a_link = Link(actor_id, a_linked_activity, linked=linked)
         self.add_network_link(a_link)
 
@@ -538,5 +547,21 @@ class Manager(object):
                 return aggregator.get_feeds()
             else:
                 return []
+        else:
+            raise RequestError("Cannot connect to ElasticSearch")
+
+    def execute_raw_network_query(self, query_dict):
+        connection = self.create_connection()
+        if connection is not None:
+            es_result = connection.search(index=self.network_index, body=query_dict)
+            return es_result
+        else:
+            raise RequestError("Cannot connect to ElasticSearch")
+
+    def execute_raw_feeds_query(self, query_dict):
+        connection = self.create_connection()
+        if connection is not None:
+            es_result = connection.search(index=self.feed_index, body=query_dict)
+            return es_result
         else:
             raise RequestError("Cannot connect to ElasticSearch")

@@ -194,7 +194,8 @@ class Activity(object):
         Creates a dict based on the activity definition
         :return: Dict
         """
-        iso_date = self.published.isoformat()
+        self.published = datetime.datetime.now()
+        iso_date = datetime.datetime.now().isoformat()
         array = iso_date.split("T")
         date = array[0]
         array = array[1].split(".")
