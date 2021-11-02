@@ -213,7 +213,13 @@ class Manager(object):
             cnt_params["url_prefix"] = self.url_prefix
         if self.use_ssl:
             cnt_params["use_ssl"] = self.use_ssl
-        connection = Elasticsearch([cnt_params], max_retries=100, retry_on_timeout=True, timeout=700, request_timeout=800)
+        connection = Elasticsearch(
+            [cnt_params],
+            max_retries=100,
+            retry_on_timeout=True,
+            timeout=700,
+            request_timeout=800,
+        )
         if connection.ping():
             return connection
         else:
