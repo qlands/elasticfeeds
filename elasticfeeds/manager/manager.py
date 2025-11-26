@@ -208,7 +208,7 @@ class Manager(object):
                 raise ValueError("URL prefix must be string")
         if not isinstance(self.use_ssl, bool):
             raise ValueError("Use SSL must be boolean")
-        cnt_params = {"host": self.host, "port": self.port, "scheme": "http"}
+        cnt_params = {"host": self.host, "port": self.port, "scheme": self.scheme}
         if self.url_prefix is not None:
             cnt_params["url_prefix"] = self.url_prefix
         if self.use_ssl:
@@ -233,6 +233,7 @@ class Manager(object):
         port=9200,
         user_name="elastic",
         user_password="",
+        scheme="http",
         url_prefix=None,
         use_ssl=False,
         number_of_shards_in_feeds=5,
@@ -265,6 +266,7 @@ class Manager(object):
         self.port = port
         self.user_name = user_name
         self.user_password = user_password
+        self.scheme = scheme
         self.url_prefix = url_prefix
         self.use_ssl = use_ssl
         self.feed_index = feed_index
