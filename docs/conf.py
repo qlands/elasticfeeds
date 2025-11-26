@@ -90,8 +90,8 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = u"elasticfeeds"
-copyright = u"2018, Carlos Quiros"
+project = "elasticfeeds"
+copyright = "2018, Carlos Quiros"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -242,8 +242,8 @@ latex_documents = [
     (
         "index",
         "user_guide.tex",
-        u"elasticfeeds Documentation",
-        u"Carlos Quiros",
+        "elasticfeeds Documentation",
+        "Carlos Quiros",
         "manual",
     )
 ]

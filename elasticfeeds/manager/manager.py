@@ -208,16 +208,16 @@ class Manager(object):
                 raise ValueError("URL prefix must be string")
         if not isinstance(self.use_ssl, bool):
             raise ValueError("Use SSL must be boolean")
-        cnt_params = {"host": self.host, "port": self.port}
+        cnt_params = {"host": self.host, "port": self.port, "scheme": "http"}
         if self.url_prefix is not None:
             cnt_params["url_prefix"] = self.url_prefix
         if self.use_ssl:
             cnt_params["use_ssl"] = self.use_ssl
         connection = Elasticsearch(
-            [cnt_params],
+            hosts=[cnt_params],
+            basic_auth=(self.user_name, self.user_password),
             max_retries=100,
             retry_on_timeout=True,
-            timeout=700,
             request_timeout=800,
         )
         if connection.ping():
@@ -231,6 +231,8 @@ class Manager(object):
         network_index="network",
         host="localhost",
         port=9200,
+        user_name="elastic",
+        user_password="",
         url_prefix=None,
         use_ssl=False,
         number_of_shards_in_feeds=5,
@@ -261,6 +263,8 @@ class Manager(object):
         """
         self.host = host
         self.port = port
+        self.user_name = user_name
+        self.user_password = user_password
         self.url_prefix = url_prefix
         self.use_ssl = use_ssl
         self.feed_index = feed_index
@@ -269,10 +273,10 @@ class Manager(object):
 
         connection = self.create_connection()
         if connection is not None:
-            if not connection.indices.exists(feed_index):
+            if not connection.indices.exists(index=feed_index):
                 try:
                     connection.indices.create(
-                        feed_index,
+                        index=feed_index,
                         body=_get_feed_index_definition(
                             number_of_shards_in_feeds, number_of_replicas_in_feeds
                         ),
@@ -283,7 +287,7 @@ class Manager(object):
                             if delete_feeds_if_exists:
                                 self.delete_feeds_index()
                                 connection.indices.create(
-                                    feed_index,
+                                    index=feed_index,
                                     body=_get_feed_index_definition(
                                         number_of_shards_in_feeds,
                                         number_of_replicas_in_feeds,
@@ -295,10 +299,10 @@ class Manager(object):
                             raise e
                     else:
                         raise e
-            if not connection.indices.exists(network_index):
+            if not connection.indices.exists(index=network_index):
                 try:
                     connection.indices.create(
-                        network_index,
+                        index=network_index,
                         body=_get_network_index_definition(
                             number_of_shards_in_network, number_of_replicas_in_network
                         ),
@@ -309,7 +313,7 @@ class Manager(object):
                             if delete_network_if_exists:
                                 self.delete_network_index()
                                 connection.indices.create(
-                                    network_index,
+                                    index=network_index,
                                     body=_get_network_index_definition(
                                         number_of_shards_in_network,
                                         number_of_replicas_in_network,

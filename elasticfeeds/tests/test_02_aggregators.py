@@ -11,11 +11,15 @@ from elasticfeeds.aggregators import (
     YearMonthTypeAggregator,
     YearMonthAggregator,
 )
+import os
 
 
 def test_aggregator():
-
-    tst_manager = Manager("testfeeds", "testnetwork")
+    user_name = os.environ.get("ES_USER", "empty")
+    user_password = os.environ.get("ES_PASS", "empty")
+    tst_manager = Manager(
+        "testfeeds", "testnetwork", user_name=user_name, user_password=user_password
+    )
 
     # Test Un-aggregated aggregator
     tst_base_aggregator = UnAggregated("cquiros")

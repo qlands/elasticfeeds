@@ -5,11 +5,16 @@ from elasticfeeds.manager import Manager
 from elasticfeeds.activity import Actor, Object, Target, Activity
 import datetime
 import time
+import os
 
 
 def test_different_dates():
     now = datetime.datetime.now()
-    tst_manager = Manager("testfeeds", "testnetwork")
+    user_name = os.environ.get("ES_USER", "empty")
+    user_password = os.environ.get("ES_PASS", "empty")
+    tst_manager = Manager(
+        "testfeeds", "testnetwork", user_name=user_name, user_password=user_password
+    )
 
     # --------------------------- Adds some activity feeds ------------------------------
 

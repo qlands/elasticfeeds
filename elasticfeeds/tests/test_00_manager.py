@@ -7,6 +7,8 @@ from elasticfeeds.activity import Actor, Object, Origin, Target, Activity
 import datetime
 import time
 import requests
+import os
+from requests.auth import HTTPBasicAuth
 
 
 def test_manager():
@@ -15,15 +17,21 @@ def test_manager():
     use_ssl = "False"
     ready = False
     print("Waiting for ES to be ready")
+    ES_USER = os.environ["ES_USER"]
+    ES_PASS = os.environ["ES_PASS"]
     while not ready:
         try:
             if use_ssl == "False":
                 resp = requests.get(
-                    "http://{}:{}/_cluster/health".format(es_host, es_port)
+                    f"http://{es_host}:{es_port}/_cluster/health",
+                    auth=HTTPBasicAuth(ES_USER, ES_PASS),
+                    timeout=30,
                 )
             else:
                 resp = requests.get(
-                    "https://{}:{}/_cluster/health".format(es_host, es_port)
+                    f"https://{es_host}:{es_port}/_cluster/health",
+                    auth=HTTPBasicAuth(ES_USER, ES_PASS),
+                    timeout=30,
                 )
             data = resp.json()
             if data["status"] == "yellow" or data["status"] == "green":
@@ -37,11 +45,17 @@ def test_manager():
     print("ES is ready")
 
     now = datetime.datetime.now()
+
+    user_name = os.environ.get("ES_USER", "empty")
+    user_password = os.environ.get("ES_PASS", "empty")
+
     tst_manager = Manager(
         "testfeeds",
         "testnetwork",
         delete_network_if_exists=True,
         delete_feeds_if_exists=True,
+        user_name=user_name,
+        user_password=user_password,
     )
     # Creates a linked activity
     tst_linked_activity = LinkedActivity("cquiros")

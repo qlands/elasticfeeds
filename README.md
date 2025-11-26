@@ -1,5 +1,3 @@
-[![CircleCI](https://circleci.com/gh/qlands/elasticfeeds.svg?style=shield&circle-token=:circle-token)](https://circleci.com/gh/qlands/elasticfeeds)
-[![Codecov](https://codecov.io/github/qlands/elasticfeeds/branch/master/graph/badge.svg)](https://app.codecov.io/gh/qlands/elasticfeeds/commits?page=1)
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
 # ElasticFeeds
@@ -18,7 +16,11 @@ Handling feeds in Elasticsearch and write aggregation queries is something that 
 
 ## Requirements
 
-- ElasticSearch >= 7.14.X
+- Tested on ElasticSearch >= 9.2.1
+
+## Latest stable branch
+
+9.2.1
 
 ## Usage
 
@@ -30,26 +32,24 @@ Handling feeds in Elasticsearch and write aggregation queries is something that 
   pip install -e .
   ```
 
-- Install ElasticSearch. The easiest way here, if you want to test ElasticFeeds, is by using the provided docker compose file in the elasticsearch_docker directory
+- Install ElasticSearch. The easiest way here, if you want to test ElasticFeeds, is by using the provided docker
 
   ```sh
-  sudo apt-get install docker docker-compose
-  cd elasticsearch_docker
-  sudo docker-compose up
+  You need to install ElasticSearch 9.2.1
+  ```
   
-  # This will start a 3 node ElasticSearch (6.8.14) in port 9200 with Kibana in port 5601.
-  
-  # If ElasticSearch fails to start due to "max virtual memory error" shutdown the docker (Ctrl+c) and do:
-  
-  sudo sysctl -w vm.max_map_count=262144
-  sudo sudo docker-compose up
+- Define environment variables (**ONLY for running pytest)**:
+
+  ```sh
+  export ES_USER="elastic"
+  export ES_PASS="my_es_password"
   ```
 
 - Create a ElasticFeeds Manager
 
   ```python
   from elasticfeeds.manager import Manager
-  my_manager = Manager('testfeeds', 'testnetwork')
+  my_manager = Manager('testfeeds', 'testnetwork',user_name='elastic',user_password='my_es_password')
   ```
 
 - Follow some people
