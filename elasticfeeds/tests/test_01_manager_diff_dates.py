@@ -13,7 +13,12 @@ def test_different_dates():
     user_name = os.environ.get("ES_USER", "empty")
     user_password = os.environ.get("ES_PASS", "empty")
     tst_manager = Manager(
-        "testfeeds", "testnetwork", user_name=user_name, user_password=user_password
+        "testfeeds",
+        "testnetwork",
+        host=os.environ.get("ES_HOST", "localhost"),
+        port=int(os.environ.get("ES_PORT", "9200")),
+        user_name=user_name,
+        user_password=user_password,
     )
 
     # --------------------------- Adds some activity feeds ------------------------------

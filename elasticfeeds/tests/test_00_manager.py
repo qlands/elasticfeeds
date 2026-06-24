@@ -12,8 +12,8 @@ from requests.auth import HTTPBasicAuth
 
 
 def test_manager():
-    es_host = "localhost"
-    es_port = 9200
+    es_host = os.environ.get("ES_HOST", "localhost")
+    es_port = int(os.environ.get("ES_PORT", "9200"))
     use_ssl = "False"
     ready = False
     print("Waiting for ES to be ready")
@@ -52,6 +52,8 @@ def test_manager():
     tst_manager = Manager(
         "testfeeds",
         "testnetwork",
+        host=es_host,
+        port=es_port,
         delete_network_if_exists=True,
         delete_feeds_if_exists=True,
         user_name=user_name,
