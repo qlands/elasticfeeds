@@ -2,104 +2,214 @@
 
 # ElasticFeeds
 
-A python library to manage notification and activity feeds using Elasticsearch as back-end.
+A Python library for **self-hosted activity & notification feeds** built on Elasticsearch, using
+**fan-out-on-read** and **composable feed algorithms**.
 
-## Description
+ElasticFeeds stores activities once (no write amplification to followers) and *composes* each user's feed
+at query time. You pick how a feed is shaped — chronologically, grouped, ranked, de-duplicated, or by
+semantic similarity — by choosing an **aggregator**. All the Elasticsearch query and aggregation
+complexity is hidden behind small Python classes that return plain dictionaries.
 
-Few years ago I started to work on [FormShare](https://github.com/qlands/FormShare), a platform built with Python and Pyramid that has Social Media features, and I had to get my hands into handling activity feeds. After searching the Internet for possible Python frameworks, I realized that those well maintained like [Django Activity Stream](https://django-activity-stream.readthedocs.io/en/latest/index.html)  or [Stream Framework](https://github.com/tschellenbach/Stream-Framework) were very oriented to Django and unable to use with other frameworks like Pyramid and Flask. Furthermore, both frameworks use asynchronous tasks to perform “fan-out on write” operations which I think is an overkill if you consider a user like @katyperry with 107,805,373 followers.
+## Is this for you?
 
-Later, I encounter a post in Stack Overflow on "[Creating a SOLR index for activity stream or news feed](https://stackoverflow.com/questions/44468264/creating-a-solr-index-for-activity-stream-or-newsfeed#comment91900926_44468264)" which attached a presentation on "[A news feed with ElasticSearch](https://kuhess.github.io/presentations/a-news-feed-with-elasticsearch/index.html)". The authors explain how to use [Elasticsearch](https://www.elastic.co/products/elasticsearch) to create “fan-out on read” by “Storing atomic news and compose a news feed at the query time”.
+**Good fit:** you run (or are happy to run) Elasticsearch, and you want an embeddable activity log /
+notification inbox / following feed inside your own app — without a third-party SaaS and without building a
+full machine-learning ranking pipeline. This is the original use case it was designed for (a Pyramid/Flask
+app such as [FormShare](https://github.com/qlands/FormShare)).
 
-After some trial and error, I managed to have feeds in Elasticsearch and perform fan-out on reads. Elasticsearch is incredible fast even with aggregation operations. The presentation on Elasticsearch talks about 40 milliseconds with 140 million of feeds with a 3 nodes. Elasticsearch is scalable which helps if you want to start small e.g., 1 node and progressively add more on demand.
+**Probably not a fit:** you need a fully managed consumer-scale social feed with learned "For You" ranking
+and real-time delivery out of the box — look at hosted services (e.g. GetStream) or notification platforms
+(e.g. Novu, Knock). ElasticFeeds gives you the storage, the fan-out-on-read model and pluggable
+aggregators; ranking signals and delivery are yours to drive.
 
-Handling feeds in Elasticsearch and write aggregation queries is something that could discourage some Python programmers and that’s the reason for ElasticFeeds. ElasticFeeds encapsulates all these complexities allowing you to handle activity feeds with few lines of code while delegating all aggregation operations to Elasticsearch. The user only gets simple arrays of feeds as Python dictionaries.
+## Why fan-out-on-read?
+
+Most feed frameworks fan out **on write**: when you post, a copy is pushed into every follower's feed.
+That is expensive for high-fan-out accounts (imagine a celebrity with 100M+ followers). ElasticFeeds
+instead stores each activity once and builds the feed **on read**, leaning on Elasticsearch's speed and
+aggregations. Elasticsearch scales horizontally, so you can start with one node and add more on demand.
+
+This approach shines when a user *follows* a bounded number of things (typical of B2B/SaaS and community
+apps). For consumer-social-graph scale, a hybrid model is usually the right answer — see *Scaling notes*
+below.
 
 ## Requirements
 
-- Tested on ElasticSearch >= 9.2.1
+- Python 3.8+
+- Elasticsearch 9.2.x (client `elasticsearch>=9.2,<10`)
 
-## Latest stable branch
+## Installation
 
-9.2.1
+```sh
+git clone https://github.com/qlands/elasticfeeds.git
+cd elasticfeeds
+pip install -e .
+```
 
-## Usage
+A single-node Elasticsearch 9.2.1 for local development / tests is provided:
 
-- Clone this repository and install ElasticFeeds
+```sh
+export ES_PASS="my_es_password"        # the 'elastic' user password
+cd elasticsearch_docker
+docker compose up -d
+```
 
-  ```sh
-  git clone https://github.com/qlands/elasticfeeds.git
-  cd elasticfeeds
-  pip install -e .
-  ```
+To run the test suite (the live tests need a running cluster; there is also a server-free subset):
 
-- Install ElasticSearch. The easiest way here, if you want to test ElasticFeeds, is by using the provided docker
+```sh
+export ES_USER="elastic"
+export ES_PASS="my_es_password"
+pip install -e ".[testing]"
+pytest                                  # all tests (needs Elasticsearch)
+pytest -k no_es                         # server-free unit tests only
+```
 
-  ```sh
-  You need to install ElasticSearch 9.2.1
-  ```
-  
-- Define environment variables (**ONLY for running pytest)**:
+## Quickstart
 
-  ```sh
-  export ES_USER="elastic"
-  export ES_PASS="my_es_password"
-  ```
+```python
+from elasticfeeds.manager import Manager
 
-- Create a ElasticFeeds Manager
+# Connect (creates the feeds + network indices if needed)
+manager = Manager("feeds", "network", user_name="elastic", user_password="my_es_password")
 
-  ```python
-  from elasticfeeds.manager import Manager
-  my_manager = Manager('testfeeds', 'testnetwork',user_name='elastic',user_password='my_es_password')
-  ```
+# Build the network
+manager.follow("carlos", "carlos")      # follow yourself -> notification feed
+manager.follow("carlos", "mark")        # follow others   -> activity feed
+manager.watch("carlos", "project_a", "project")   # watch an object
 
-- Follow some people
+# Record activities
+from elasticfeeds.activity import Actor, Object, Activity
 
-  ```python
-  # Carlos follows himself (notification feed)
-  my_manager.follow('carlos', 'carlos')
-  # Carlos follows mark (Activity feed)
-  my_manager.follow('carlos', 'mark')
-  ```
+actor = Actor("mark", "person")
+obj = Object("project_a", "project")
+manager.add_activity_feed(Activity("add", actor, obj))
 
-- Create some activities
+# Read the feed by choosing an aggregator
+from elasticfeeds.aggregators import UnAggregated, NotificationAggregator
 
-  ```python
-  from elasticfeeds.activity import Actor, Object, Activity
-  # Create an actor for Carlos of type person
-  my_actor = Actor('carlos', 'person')
-  # Create an Object for Project A of type project
-  my_project = Object('project_a', 'project')
-  # Create an activity representing that Carlos added project A
-  my_activity = Activity('add', my_actor, my_project)
-  # Store the activity
-  my_manager.add_activity_feed(my_activity)
-  
-  # Create an actor for Mark of type person
-  my_actor = Actor('mark', 'person')
-  # Create an Object for Project A of type project
-  my_project = Object('project_a', 'project')
-  # Create an activity representing that Mark created a blog about project A
-  my_activity = Activity('blog', my_actor, my_project)
-  # Store the activity
-  my_manager.add_activity_feed(my_activity)
-  ```
+print(manager.get_feeds(UnAggregated("carlos")))            # chronological
+print(manager.get_feeds(NotificationAggregator("carlos")))  # collapsed notifications
+```
 
-- Query the activity feeds
+## Aggregators
 
-  ```python
-  from elasticfeeds.aggregators import UnAggregated, YearMonthTypeAggregator
-  # Get feeds just ordered by date
-  my_basic_aggregator = UnAggregated('carlos')
-  my_feeds = my_manager.get_feeds(my_basic_aggregator)
-  print(my_feeds)
-  # Get feeds aggregated by year, month and type (verb)
-  my_aggregate_feed = YearMonthTypeAggregator('carlos')
-  my_feeds = my_manager.get_feeds(my_aggregate_feed)
-  print(my_feeds)
-  ```
+A feed is shaped by the aggregator you pass to `manager.get_feeds(...)`. All restrict results to the
+actor's network and to activities published since each link was created.
+
+| Aggregator | Shape of the feed |
+|---|---|
+| `UnAggregated` | Flat, reverse-chronological. `from`/`size` pagination. |
+| `CursorAggregator` | Flat, reverse-chronological with `search_after` cursor pagination (no 10k limit). |
+| `CollapseAggregator` | Reverse-chronological, **one most-recent activity per object** (or actor). |
+| `NotificationAggregator` | Collapsed summaries: *"X, Y and N others &lt;verb&gt; &lt;object&gt;"*. |
+| `DecayRankedAggregator` | Single **ranked** ("hot") feed: recency decay × connection weight. |
+| `DateWeightAggregator` | Grouped by date, ordered within a day by connection weight. |
+| `RecentTypeAggregator` | Grouped by activity type (verb). |
+| `RecentTypeObjectAggregator` | Grouped by type, then object. |
+| `RecentObjectTypeAggregator` | Grouped by object, then type. |
+| `YearMonthAggregator` | Grouped by year → month. |
+| `YearMonthTypeAggregator` | Grouped by year → month → type. |
+| `SemanticAggregator` | Semantic / "more like this" via kNN vector search. |
+
+Common knobs (on every aggregator): `order` (`"asc"`/`"desc"`), `result_size`, `result_from`,
+`top_hits_size`.
+
+### Notification feed
+
+```python
+from elasticfeeds.aggregators import NotificationAggregator
+
+for n in manager.get_feeds(NotificationAggregator("carlos")):
+    # {'object_id': 'project_a', 'type': 'add', 'actors': ['mark', 'jane'],
+    #  'actor_count': 3, 'event_count': 5, 'latest': {...}}
+    print(n["actors"][:2], f"and {n['actor_count'] - 2} others", n["type"], n["object_id"])
+```
+
+### Ranked ("hot") feed
+
+```python
+from elasticfeeds.aggregators import DecayRankedAggregator
+
+# Score = Gaussian recency decay (half-weight after 7 days) × connection weight
+feed = manager.get_feeds(DecayRankedAggregator("carlos", scale="7d", decay=0.5))
+```
+
+### Cursor (infinite scroll)
+
+```python
+from elasticfeeds.aggregators import CursorAggregator
+
+page = manager.get_feeds(CursorAggregator("carlos"))          # first page
+# page == {"activities": [...], "next_cursor": [...] or None}
+if page["next_cursor"]:
+    page2 = manager.get_feeds(CursorAggregator("carlos", search_after=page["next_cursor"]))
+```
+
+### Collapse (de-duplicate)
+
+```python
+from elasticfeeds.aggregators import CollapseAggregator
+
+manager.get_feeds(CollapseAggregator("carlos"))                       # latest per object
+manager.get_feeds(CollapseAggregator("carlos", collapse_field="actor.id"))  # latest per actor
+```
+
+### Semantic feed (kNN vector search)
+
+ElasticFeeds is model-agnostic: **you** produce the vectors (with whatever embedding model you use) and
+ElasticFeeds stores and searches them.
+
+```python
+# 1) Enable the vector field on the feed index (dimensionality of your model's output)
+manager = Manager("feeds", "network", user_name="elastic", user_password="...",
+                  embedding_dims=384)   # e.g. a 384-dim sentence-embedding model
+
+# 2) Store activities with an embedding
+activity = Activity("blog", Actor("mark", "person"), Object("post_1", "post"),
+                    embedding=my_model.encode("a post about water systems"))
+manager.add_activity_feed(activity)
+
+# 3) Query by similarity to a vector (e.g. the user's interest profile or a seed item)
+from elasticfeeds.aggregators import SemanticAggregator
+
+query_vector = my_model.encode("water and sanitation")
+feed = manager.get_feeds(SemanticAggregator("carlos", query_vector, k=10))
+# restrict_to_network=False turns this into a global discovery feed
+```
+
+## Activities
+
+Activities follow [activitystrea.ms](http://activitystrea.ms/) as closely as possible:
+
+```python
+Activity(
+    activity_type,        # the verb, e.g. "add", "blog", "move" (alphabetic)
+    activity_actor,       # Actor(id, type)
+    activity_object,      # Object(id, type)
+    published=None,       # datetime; defaults to now. Honoured (you can back-date)
+    activity_origin=None, # Origin(id, type)  — optional
+    activity_target=None, # Target(id, type)  — optional
+    extra=None,           # dict; stored but non-analyzable
+    embedding=None,       # list[float]; stored in the dense_vector field
+)
+```
+
+`actor`, `object`, `origin` and `target` each carry an `extra` dict for non-indexed payload (titles,
+URLs, etc.).
+
+## Scaling notes
+
+- **Read side:** the feed query contains one clause per followed entity (two per watched object). Very
+  large *following* counts can approach Elasticsearch's `indices.query.bool.max_clause_count`; `max_link_size`
+  (default 1000) caps how many network links are loaded. For consumer-scale graphs, consider a hybrid
+  fan-out (write-fanout for normal accounts, read-fanout for high-fan-out ones).
+- **Pagination:** `UnAggregated` uses `from`/`size` (bounded by `index.max_result_window`, 10000). Use
+  `CursorAggregator` for unbounded infinite scroll.
+- **Single node:** the default `number_of_replicas` is 1, which leaves a single-node cluster *yellow*
+  (the replica can't be allocated). That's expected for local development.
 
 ## Collaborate
 
-The way you manage feeds will depend on the kind of social platform you are implementing. While ElasticFeeds can store any kind of feeds and have some aggregator classes, the way you aggregate them would depend on how you want to present them to the end user.
-
-Besides reporting issues, the best way to collaborate with ElasticFeeds is by sharing aggregator classes with others. So if you have an aggregator, fork the project, create a pull request and I will be happy to add it to the base code :-)
+The way you aggregate feeds depends on how you want to present them to your users. The best way to
+contribute is by sharing aggregator classes: fork the project, add an aggregator, and open a pull request.
+Bug reports are very welcome too.
