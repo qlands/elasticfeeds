@@ -2,6 +2,34 @@
 Changelog
 =========
 
+Version 1.2.0
+=============
+
+OpenSearch support (issue #5)
+-----------------------------
+
+- Added an optional OpenSearch backend. ElasticSearch remains the default and its behaviour is unchanged.
+  Select the backend with ``Manager(backend="opensearch")`` and install ``pip install elasticfeeds[opensearch]``.
+- The two clients are isolated behind ``elasticfeeds/backends.py`` adapters: connection building,
+  document/index writes, and vector search (``dense_vector`` + top-level ``knn`` on ES vs ``knn_vector`` +
+  a ``knn`` query on OpenSearch). The shared aggregator query DSL needs no per-backend handling.
+- ``Manager`` accepts a pre-built ``connection`` to inject your own client (AWS Lambda, IAM, custom TLS).
+
+New features
+------------
+
+- ``Manager.get_activities(...)`` -- introspect the activity graph directly by actor / verb / object /
+  target (independent of any follower network). Library-level building block for graph exploration and
+  REST-style lookups (issue #8).
+- ``examples/demo.py`` -- a runnable, self-cleaning, end-to-end demonstration including the
+  GetStream -> ElasticFeeds mapping and pagination patterns (issue #9).
+
+Notes
+-----
+
+- Verified against live clusters -- ElasticSearch 9.2.1 and OpenSearch 2.19 (including the kNN / semantic
+  path) -- in addition to the server-free test suite.
+
 Version 1.1.0
 =============
 

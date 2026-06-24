@@ -2,8 +2,8 @@
 
 # ElasticFeeds
 
-A Python library for **self-hosted activity & notification feeds** built on Elasticsearch, using
-**fan-out-on-read** and **composable feed algorithms**.
+A Python library for **self-hosted activity & notification feeds** built on Elasticsearch (or OpenSearch),
+using **fan-out-on-read** and **composable feed algorithms**.
 
 ElasticFeeds stores activities once (no write amplification to followers) and *composes* each user's feed
 at query time. You pick how a feed is shaped — chronologically, grouped, ranked, de-duplicated, or by
@@ -36,14 +36,17 @@ below.
 ## Requirements
 
 - Python 3.8+
-- Elasticsearch 9.2.x (client `elasticsearch>=9.2,<10`)
+- Elasticsearch 9.2.x (client `elasticsearch>=9.2,<10`), **or** OpenSearch (optional, `opensearch-py>=2,<4`)
+
+Elasticsearch is the default. OpenSearch support is fully optional and does not affect Elasticsearch users.
 
 ## Installation
 
 ```sh
 git clone https://github.com/qlands/elasticfeeds.git
 cd elasticfeeds
-pip install -e .
+pip install -e .                  # Elasticsearch backend (default)
+pip install -e ".[opensearch]"   # add OpenSearch support
 ```
 
 A single-node Elasticsearch 9.2.1 for local development / tests is provided:
@@ -90,6 +93,29 @@ from elasticfeeds.aggregators import UnAggregated, NotificationAggregator
 print(manager.get_feeds(UnAggregated("carlos")))            # chronological
 print(manager.get_feeds(NotificationAggregator("carlos")))  # collapsed notifications
 ```
+
+## Backends (Elasticsearch & OpenSearch)
+
+Elasticsearch is the default and its behaviour is unchanged by OpenSearch support. To use OpenSearch,
+install the extra and pass `backend="opensearch"`:
+
+```python
+# pip install elasticfeeds[opensearch]
+manager = Manager("feeds", "network", backend="opensearch",
+                  user_name="admin", user_password="...")
+```
+
+You can also inject a pre-built client (handy for AWS Lambda, IAM-signed requests, or custom TLS); it
+bypasses the built-in connection logic entirely:
+
+```python
+from opensearchpy import OpenSearch
+manager = Manager("feeds", "network", backend="opensearch", connection=OpenSearch(...))
+```
+
+The only backend-specific behaviour is vector search: ElasticFeeds emits `dense_vector` + a top-level
+`knn` clause on Elasticsearch, and `knn_vector` + a `knn` query (lucene engine) on OpenSearch. Every other
+aggregator is identical across backends.
 
 ## Aggregators
 
@@ -177,6 +203,30 @@ feed = manager.get_feeds(SemanticAggregator("carlos", query_vector, k=10))
 # restrict_to_network=False turns this into a global discovery feed
 ```
 
+On OpenSearch this works the same way — the vector field and kNN query are translated automatically.
+
+## Graph introspection
+
+`get_activities(...)` queries the activity graph directly (independent of any follower network) — useful
+for exploration and REST-style lookups such as "everything actor X did":
+
+```python
+manager.get_activities(actor_id="mark")                                   # all of mark's activities
+manager.get_activities(actor_id="mark", verb="add", object_type="project")
+manager.get_activities(object_id="project_a", size=50, order="asc")
+```
+
+## Running the demo
+
+`examples/demo.py` is a runnable, end-to-end walkthrough (network → activities → every feed style, with the
+GetStream → ElasticFeeds mapping). It uses throwaway indices and cleans up after itself:
+
+```sh
+export ES_HOST=localhost ES_USER=elastic ES_PASS=secret
+# optional: export EF_BACKEND=opensearch
+python examples/demo.py
+```
+
 ## Activities
 
 Activities follow [activitystrea.ms](http://activitystrea.ms/) as closely as possible:
@@ -190,7 +240,7 @@ Activity(
     activity_origin=None, # Origin(id, type)  — optional
     activity_target=None, # Target(id, type)  — optional
     extra=None,           # dict; stored but non-analyzable
-    embedding=None,       # list[float]; stored in the dense_vector field
+    embedding=None,       # list[float]; stored in the vector field (dense_vector / knn_vector)
 )
 ```
 
