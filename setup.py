@@ -18,7 +18,7 @@ tests_require = ["pytest", "pytest-cov", "coverage", "requests"]
 
 setup(
     name="elasticfeeds",
-    version="1.1.0",
+    version="1.2.0",
     description="ElasticFeeds",
     long_description=README + "\n\n" + CHANGES,
     classifiers=[
@@ -35,6 +35,10 @@ setup(
     package_data={"": ["README.md", "LICENSE.txt"]},
     package_dir={"elasticfeeds": "elasticfeeds"},
     zip_safe=False,
-    extras_require={"testing": tests_require, "dev": ["black"]},
+    extras_require={
+        "testing": tests_require,
+        "opensearch": ["opensearch-py>=2,<4"],
+        "dev": ["black"],
+    },
     install_requires=requires,
 )

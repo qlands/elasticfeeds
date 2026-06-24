@@ -1,0 +1,49 @@
+# Single-node OpenSearch for testing the ElasticFeeds OpenSearch backend.
+#
+# Published on host port 9201 (not 9200) so it can run side-by-side with the Elasticsearch compose in
+# ../elasticsearch_docker, which lets you exercise both backends at once. If you only run OpenSearch you
+# can change the published port to 9200.
+#
+# The security plugin is DISABLED, so OpenSearch is reachable over plain http with no auth/TLS. This is for
+# LOCAL TESTING ONLY -- do not use this configuration in production.
+#
+# Usage:
+#   cd opensearch_docker
+#   docker compose up -d
+#   curl http://localhost:9201            # cluster info, no credentials needed
+#
+# Then point ElasticFeeds at it:
+#   EF_BACKEND=opensearch ES_HOST=localhost ES_PORT=9201 python examples/demo.py
+services:
+  opensearch:
+    image: opensearchproject/opensearch:2.19.0
+    container_name: ef-opensearch
+    environment:
+      - cluster.name=ef-opensearch
+      - node.name=os01
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_SECURITY_PLUGIN=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - osdata:/usr/share/opensearch/data
+    ports:
+      - 9201:9200
+    networks:
+      - opensearch
+
+volumes:
+  osdata:
+    driver: local
+
+networks:
+  opensearch:
+    driver: bridge

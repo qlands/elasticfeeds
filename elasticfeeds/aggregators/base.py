@@ -21,6 +21,7 @@ class BaseAggregator(object):
             raise IDError()
 
         self._connection = None
+        self._backend = None
         self._feed_index = None
         self._network_array = []
         self.query_dict = (
@@ -104,6 +105,19 @@ class BaseAggregator(object):
     @connection.setter
     def connection(self, value):
         self._connection = value
+
+    @property
+    def backend(self):
+        """
+        The backend adapter (Elasticsearch or OpenSearch) injected by the Manager. Only needed by
+        aggregators whose query differs per backend (e.g. SemanticAggregator).
+        :return: BaseBackend instance or None
+        """
+        return self._backend
+
+    @backend.setter
+    def backend(self, value):
+        self._backend = value
 
     @property
     def feed_index(self):

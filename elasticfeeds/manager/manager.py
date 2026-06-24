@@ -1,4 +1,4 @@
-from elasticsearch import Elasticsearch
+from elasticfeeds.backends import get_backend
 from elasticfeeds.exceptions import (
     LinkObjectError,
     LinkExistError,
@@ -17,12 +17,7 @@ import datetime
 __all__ = ["Manager"]
 
 
-def _get_feed_index_definition(
-    number_of_shards,
-    number_of_replicas,
-    embedding_dims=None,
-    embedding_similarity="cosine",
-):
+def _get_feed_index_definition(number_of_shards, number_of_replicas):
     """
     Constructs the Feed index with a given number of shards and replicas. Feeds are stored in an atomic form and
        are based as much as possible on http://activitystrea.ms/
@@ -133,15 +128,6 @@ def _get_feed_index_definition(
             }
         },
     }
-    if embedding_dims is not None:
-        # Opt-in dense vector used by the SemanticAggregator for kNN search. Only added when the caller
-        # configures embedding_dims, so existing indices and users are unaffected.
-        _json["mappings"]["properties"]["embedding"] = {
-            "type": "dense_vector",
-            "dims": embedding_dims,
-            "index": True,
-            "similarity": embedding_similarity,
-        }
     return _json
 
 
@@ -207,12 +193,16 @@ def _get_network_index_definition(number_of_shards, number_of_replicas):
 class Manager(object):
     """
     The Manager class handles all activity feed operations.
+
+    By default it talks to ElasticSearch. Pass ``backend="opensearch"`` to use OpenSearch instead (requires
+    the ``opensearch-py`` package), or inject a pre-built client via ``connection`` (useful for AWS Lambda or
+    custom TLS/auth). ElasticSearch behaviour is unchanged regardless of these additions.
     """
 
     def create_connection(self):
         """
-        Creates a connection to ElasticSearch and pings it.
-        :return: A tested (pinged) connection to ElasticSearch or None if the ping fails
+        Creates a connection to the configured backend and pings it.
+        :return: A tested (pinged) client, or None if the ping fails
         """
         if not isinstance(self.port, int):
             raise ValueError("Port must be an integer")
@@ -223,23 +213,17 @@ class Manager(object):
                 raise ValueError("URL prefix must be string")
         if not isinstance(self.use_ssl, bool):
             raise ValueError("Use SSL must be boolean")
-        # In the 8.x/9.x client SSL is derived from the scheme. ``use_ssl`` is kept
-        # for backwards compatibility and simply forces the https scheme.
-        scheme = "https" if self.use_ssl else self.scheme
-        node = {"host": self.host, "port": self.port, "scheme": scheme}
-        if self.url_prefix is not None:
-            node["path_prefix"] = self.url_prefix
-        connection = Elasticsearch(
-            hosts=[node],
-            basic_auth=(self.user_name, self.user_password),
+        return self._backend.create_client(
+            host=self.host,
+            port=self.port,
+            scheme=self.scheme,
+            url_prefix=self.url_prefix,
+            use_ssl=self.use_ssl,
+            user_name=self.user_name,
+            user_password=self.user_password,
             max_retries=100,
-            retry_on_timeout=True,
             request_timeout=800,
         )
-        if connection.ping():
-            return connection
-        else:
-            return None
 
     def __init__(
         self,
@@ -261,6 +245,8 @@ class Manager(object):
         embedding_dims=None,
         embedding_similarity="cosine",
         max_link_size=1000,
+        backend="elasticsearch",
+        connection=None,
     ):
         """
         The constructor of the Manager. It creates the feeds and network indices if they don't exist. See
@@ -268,22 +254,25 @@ class Manager(object):
         for more information about shards and replicas
         :param feed_index: The name if the feed index. "feeds" by default
         :param network_index: The name of the network index. "network" by default
-        :param host: ElasticSearch host name. "localhost" by default
-        :param port: ElasticSearch port. 9200 by default
+        :param host: Backend host name. "localhost" by default
+        :param port: Backend port. 9200 by default
         :param url_prefix: URL prefix. None by default
-        :param use_ssl: Use SSL to connect to ElasticSearch. False by default
+        :param use_ssl: Use SSL to connect to the backend. False by default
         :param number_of_shards_in_feeds: Number of shards for the feeds index. 5 by default
         :param number_of_replicas_in_feeds: Number of replicas for the feeds index. 1 by default
         :param number_of_shards_in_network: Number of shards for the network index. 5 by default
         :param number_of_replicas_in_network: Number of replicas for the network index. 1 by default
         :param delete_feeds_if_exists: Delete the feeds index if already exist. False by default
         :param delete_network_if_exists: Delete the network index if already exist. False by default
-        :param embedding_dims: Optional integer. When set, the feed index gets a ``dense_vector`` "embedding"
-                               field of this dimensionality, enabling the SemanticAggregator (kNN). None by
-                               default (no vector field, fully backwards compatible).
+        :param embedding_dims: Optional integer. When set, the feed index gets a vector "embedding" field of
+                               this dimensionality, enabling the SemanticAggregator (kNN). None by default (no
+                               vector field, fully backwards compatible).
         :param embedding_similarity: Similarity metric for the embedding field ("cosine", "dot_product",
                                      "l2_norm"). "cosine" by default. Only used when embedding_dims is set.
         :param max_link_size: Maximum number of links to fetch from an actor
+        :param backend: Which backend to use: "elasticsearch" (default) or "opensearch".
+        :param connection: Optional pre-built client to use instead of creating one (e.g. for AWS Lambda or
+                           custom TLS/auth). When provided it must match ``backend``.
         """
         self.host = host
         self.port = port
@@ -295,24 +284,27 @@ class Manager(object):
         self.feed_index = feed_index
         self.network_index = network_index
         self._max_link_size = max_link_size
+        self.backend = backend
+        self._backend = get_backend(backend)
 
-        # A single, long-lived connection is created here and reused for every
-        # operation. The ElasticSearch client maintains its own connection pool
-        # and is safe to share, so re-creating it per call is wasteful.
-        self._connection = self.create_connection()
-        if self._connection is None:
-            raise ElasticFeedConnectionError()
+        # A single, long-lived connection is created here and reused for every operation. The client maintains
+        # its own connection pool and is safe to share, so re-creating it per call is wasteful. A pre-built
+        # client can be injected via ``connection`` (e.g. for AWS Lambda or custom TLS/auth).
+        if connection is not None:
+            self._connection = connection
+        else:
+            self._connection = self.create_connection()
+            if self._connection is None:
+                raise ElasticFeedConnectionError()
 
-        self._ensure_index(
-            feed_index,
-            _get_feed_index_definition(
-                number_of_shards_in_feeds,
-                number_of_replicas_in_feeds,
-                embedding_dims=embedding_dims,
-                embedding_similarity=embedding_similarity,
-            ),
-            delete_feeds_if_exists,
+        feed_definition = _get_feed_index_definition(
+            number_of_shards_in_feeds, number_of_replicas_in_feeds
         )
+        if embedding_dims is not None:
+            self._backend.add_vector_field(
+                feed_definition, "embedding", embedding_dims, embedding_similarity
+            )
+        self._ensure_index(feed_index, feed_definition, delete_feeds_if_exists)
         self._ensure_index(
             network_index,
             _get_network_index_definition(
@@ -329,22 +321,18 @@ class Manager(object):
         :param definition: Dict with "settings" and "mappings" sections
         :param delete_if_exists: Whether to drop and recreate an existing index
         """
-        if self._connection.indices.exists(index=index_name):
+        if self._backend.index_exists(self._connection, index_name):
             if delete_if_exists:
-                self._connection.indices.delete(index=index_name)
+                self._backend.delete_index(self._connection, index_name)
             else:
                 return
-        self._connection.indices.create(
-            index=index_name,
-            settings=definition["settings"],
-            mappings=definition["mappings"],
-        )
+        self._backend.create_index(self._connection, index_name, definition)
 
     @property
     def connection(self):
         """
-        The shared ElasticSearch connection used by this manager.
-        :return: ES connection
+        The shared backend connection (Elasticsearch or OpenSearch client) used by this manager.
+        :return: The backend client
         """
         return self._connection
 
@@ -367,7 +355,7 @@ class Manager(object):
         Deletes the feed index
         :return: True if the index was deleted successfully
         """
-        self._connection.indices.delete(index=self.feed_index)
+        self._backend.delete_index(self._connection, self.feed_index)
         return True
 
     def delete_network_index(self):
@@ -375,7 +363,7 @@ class Manager(object):
         Deleted the network index
         :return: True if the index was deleted successfully
         """
-        self._connection.indices.delete(index=self.network_index)
+        self._backend.delete_index(self._connection, self.network_index)
         return True
 
     def link_network_exists(self, link_object):
@@ -386,8 +374,8 @@ class Manager(object):
         """
         if not isinstance(link_object, Link):
             raise LinkObjectError()
-        res = self._connection.search(
-            index=self.network_index, body=link_object.get_search_dict()
+        res = self._backend.search(
+            self._connection, self.network_index, link_object.get_search_dict()
         )
         if res["hits"]["total"]["value"] > 0:
             return True
@@ -403,10 +391,8 @@ class Manager(object):
             raise LinkObjectError()
         if not self.link_network_exists(link_object):
             unique_id = str(uuid.uuid4())
-            self._connection.index(
-                index=self.network_index,
-                id=unique_id,
-                document=link_object.get_dict(),
+            self._backend.index_document(
+                self._connection, self.network_index, unique_id, link_object.get_dict()
             )
             return unique_id
         else:
@@ -421,9 +407,8 @@ class Manager(object):
         if not isinstance(link_object, Link):
             raise LinkObjectError()
         if self.link_network_exists(link_object):
-            self._connection.delete_by_query(
-                index=self.network_index,
-                body=link_object.get_search_dict(),
+            self._backend.delete_by_query(
+                self._connection, self.network_index, link_object.get_search_dict()
             )
             return True
         else:
@@ -501,18 +486,16 @@ class Manager(object):
         # Store the id inside the document too so it can be used as a stable tie-breaker for
         # cursor (search_after) pagination without relying on _id fielddata.
         document["feed_id"] = unique_id
-        self._connection.index(
-            index=self.feed_index,
-            id=unique_id,
-            document=document,
+        self._backend.index_document(
+            self._connection, self.feed_index, unique_id, document
         )
         return unique_id
 
     def get_search_dict(self, actor_id):
         """
-        Constructs a ES search that will be used to search for the network of actor_id
+        Constructs a search that will be used to search for the network of actor_id
         :param actor_id: The actor to search for its network links
-        :return: A dict that will be passes to ES
+        :return: A dict that will be passed to the backend
         """
         _dict = {
             "size": self.max_link_size,
@@ -527,8 +510,8 @@ class Manager(object):
         :return: Dict array
         """
         result = []
-        es_result = self._connection.search(
-            index=self.network_index, body=self.get_search_dict(actor_id)
+        es_result = self._backend.search(
+            self._connection, self.network_index, self.get_search_dict(actor_id)
         )
         if es_result["hits"]["total"]["value"] > 0:
             for hit in es_result["hits"]["hits"]:
@@ -545,6 +528,7 @@ class Manager(object):
             raise AggregatorObjectError()
         aggregator.connection = self._connection
         aggregator.feed_index = self.feed_index
+        aggregator.backend = self._backend
         aggregator.network_array = self.get_network(aggregator.actor_id)
         aggregator.set_query_dict()
         if aggregator.query_dict is not None:
@@ -554,8 +538,69 @@ class Manager(object):
         else:
             return []
 
+    def get_activities(
+        self,
+        actor_id=None,
+        actor_type=None,
+        verb=None,
+        object_id=None,
+        object_type=None,
+        target_id=None,
+        target_type=None,
+        since=None,
+        size=100,
+        result_from=0,
+        order="desc",
+    ):
+        """
+        Introspect the activity graph directly, independent of any actor's network. Returns the activities
+        matching the given actor / verb / object / target constraints (all optional, combined with AND),
+        ordered by published date. This is the building block for graph exploration / REST-style lookups such
+        as "all activities by actor X" or "X did <verb> to <object>".
+
+        Unlike get_feeds(), results are NOT restricted to a follower network.
+
+        :param actor_id: Match activities whose actor has this id
+        :param actor_type: Match activities whose actor has this type
+        :param verb: Match activities of this type (verb)
+        :param object_id: Match activities whose object has this id
+        :param object_type: Match activities whose object has this type
+        :param target_id: Match activities whose target has this id
+        :param target_type: Match activities whose target has this type
+        :param since: Only activities published on or after this datetime (or ISO string)
+        :param size: Maximum number of activities to return. 100 by default
+        :param result_from: Offset for pagination. 0 by default
+        :param order: "desc" (default) or "asc" by published date
+        :return: Dict array of matching activities
+        """
+        must = []
+        for field, value in (
+            ("actor.id", actor_id),
+            ("actor.type", actor_type),
+            ("type", verb),
+            ("object.id", object_id),
+            ("object.type", object_type),
+            ("target.id", target_id),
+            ("target.type", target_type),
+        ):
+            if value is not None:
+                must.append({"term": {field: value}})
+        if since is not None:
+            if isinstance(since, datetime.datetime):
+                since = since.isoformat()
+            must.append({"range": {"published": {"gte": since}}})
+        query = {"bool": {"must": must}} if must else {"match_all": {}}
+        body = {
+            "query": query,
+            "sort": [{"published": {"order": order}}],
+            "size": size,
+            "from": result_from,
+        }
+        es_result = self._backend.search(self._connection, self.feed_index, body)
+        return [hit["_source"] for hit in es_result["hits"]["hits"]]
+
     def execute_raw_network_query(self, query_dict):
-        return self._connection.search(index=self.network_index, body=query_dict)
+        return self._backend.search(self._connection, self.network_index, query_dict)
 
     def execute_raw_feeds_query(self, query_dict):
-        return self._connection.search(index=self.feed_index, body=query_dict)
+        return self._backend.search(self._connection, self.feed_index, query_dict)

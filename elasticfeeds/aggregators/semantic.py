@@ -47,39 +47,42 @@ class SemanticAggregator(BaseAggregator):
         self.embedding_field = embedding_field
         self.restrict_to_network = restrict_to_network
 
+    #: Feed fields returned by a semantic search (never the large embedding vector itself).
+    _SOURCE_INCLUDES = [
+        "published",
+        "type",
+        "actor",
+        "object",
+        "origin",
+        "target",
+        "extra",
+    ]
+
     def set_query_dict(self):
         """
-        Builds a kNN search. When restricting to the network, the network "should" clauses are used as a kNN
-        filter so only eligible activities are considered.
+        Builds a kNN search via the active backend. Elasticsearch and OpenSearch express kNN differently, so
+        the backend produces the correct body. When restricting to the network, the network "should" clauses
+        are used as a kNN filter so only eligible activities are considered.
         """
-        knn = {
-            "field": self.embedding_field,
-            "query_vector": self.query_vector,
-            "k": self.k,
-            "num_candidates": self.num_candidates,
-        }
+        filter_clause = None
         if self.restrict_to_network:
             should = self._network_should_clauses()
             if len(should) == 0:
                 self.query_dict = None
                 return
-            knn["filter"] = {"bool": {"should": should, "minimum_should_match": 1}}
-        self.query_dict = {"knn": knn}
+            filter_clause = {"bool": {"should": should, "minimum_should_match": 1}}
+        self.query_dict = self.backend.knn_search_body(
+            field=self.embedding_field,
+            query_vector=self.query_vector,
+            k=self.k,
+            num_candidates=self.num_candidates,
+            filter_clause=filter_clause,
+            source_includes=self._SOURCE_INCLUDES,
+        )
 
     def set_aggregation_section(self):
-        self.query_dict["size"] = self.k
-        # Return the usual feed fields but never the (large) embedding vector itself.
-        self.query_dict["_source"] = {
-            "includes": [
-                "published",
-                "type",
-                "actor",
-                "object",
-                "origin",
-                "target",
-                "extra",
-            ]
-        }
+        # The backend already produced a complete search body (size + _source included).
+        pass
 
     def get_feeds(self):
         """
