@@ -14,6 +14,7 @@ import pytest
 from elasticfeeds.activity import Actor, Object, Activity
 from elasticfeeds.exceptions import EmbeddingTypeError
 from elasticfeeds.manager.manager import _get_feed_index_definition
+from elasticfeeds.backends import ElasticsearchBackend
 from elasticfeeds.aggregators import (
     NotificationAggregator,
     DecayRankedAggregator,
@@ -46,8 +47,9 @@ def test_feed_mapping_embedding_is_opt_in():
     plain = _get_feed_index_definition(5, 1)
     assert "embedding" not in plain["mappings"]["properties"]
 
-    with_vec = _get_feed_index_definition(5, 1, embedding_dims=8)
-    field = with_vec["mappings"]["properties"]["embedding"]
+    # The vector field is added by the backend adapter (ES dense_vector).
+    ElasticsearchBackend().add_vector_field(plain, "embedding", 8, "cosine")
+    field = plain["mappings"]["properties"]["embedding"]
     assert field["type"] == "dense_vector"
     assert field["dims"] == 8
     assert field["index"] is True
@@ -207,6 +209,7 @@ def test_semantic_builds_knn_with_network_filter():
     aggregator = SemanticAggregator(
         "carlos", query_vector=[0.1, 0.2], k=5, num_candidates=50
     )
+    aggregator.backend = ElasticsearchBackend()
     aggregator.network_array = _actor_network()
     aggregator.set_query_dict()
     aggregator.set_aggregation_section()
@@ -223,6 +226,7 @@ def test_semantic_without_network_restriction_is_global():
     aggregator = SemanticAggregator(
         "carlos", query_vector=[0.1, 0.2], restrict_to_network=False
     )
+    aggregator.backend = ElasticsearchBackend()
     aggregator.network_array = []
     aggregator.set_query_dict()
     assert aggregator.query_dict is not None
