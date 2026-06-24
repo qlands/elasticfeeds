@@ -19,7 +19,9 @@ __all__ = [
     "OrderError",
     "SizeError",
     "FromError",
+    "EmbeddingTypeError",
     "LinkNotExistError",
+    "ElasticFeedConnectionError",
     "ElasticFeedException",
 ]
 
@@ -28,6 +30,15 @@ class ElasticFeedException(Exception):
     """
     Base class for all exceptions raised by this ElasticFeeds
     """
+
+
+class ElasticFeedConnectionError(ElasticFeedException):
+    """
+    Exception raised when ElasticFeeds cannot establish a connection to ElasticSearch.
+    """
+
+    def __str__(self):
+        return "Cannot connect to ElasticSearch"
 
 
 class KeyWordError(ElasticFeedException):
@@ -225,3 +236,12 @@ class FromError(ElasticFeedException):
 
     def __str__(self):
         return "From must be integer"
+
+
+class EmbeddingTypeError(ElasticFeedException):
+    """
+    Exception raised when ElasticFeeds checks whether an embedding is a list of numbers.
+    """
+
+    def __str__(self):
+        return "Embedding must be a list of numbers (int or float)"

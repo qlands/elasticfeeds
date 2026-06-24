@@ -148,46 +148,77 @@ class BaseAggregator(object):
         result = [{"published": {"order": self.order}}]
         return result
 
-    def set_query_dict(self):
+    def _network_should_clauses(self):
         """
-        Setup the query section of the ES dict that will search for activities in the feed index
+        Builds the list of "should" bool clauses that match every activity flowing from the actor's network.
+        An "actor" link contributes one clause (matching the actor). An "object" link contributes two clauses
+        (matching the object and the target). Each clause only matches activities published on or after the date
+        the link was created. Shared by every aggregator that reads the following feed.
+        :return: List of bool clauses (possibly empty)
         """
         should = []
         for link in self.network_array:
             since = link["linked"]
             linked_activity = link["linked_activity"]
             if linked_activity["activity_class"] == "actor":
-                should_item = {
-                    "bool": {
-                        "must": [
-                            {"term": {"actor.id": linked_activity["id"]}},
-                            {"term": {"actor.type": linked_activity["type"]}},
-                            {"range": {"published": {"gte": since}}},
-                        ]
+                should.append(
+                    {
+                        "bool": {
+                            "must": [
+                                {"term": {"actor.id": linked_activity["id"]}},
+                                {"term": {"actor.type": linked_activity["type"]}},
+                                {"range": {"published": {"gte": since}}},
+                            ]
+                        }
                     }
-                }
-                should.append(should_item)
+                )
             else:
-                should_item = {
-                    "bool": {
-                        "must": [
-                            {"term": {"object.id": linked_activity["id"]}},
-                            {"term": {"object.type": linked_activity["type"]}},
-                            {"range": {"published": {"gte": since}}},
-                        ]
+                should.append(
+                    {
+                        "bool": {
+                            "must": [
+                                {"term": {"object.id": linked_activity["id"]}},
+                                {"term": {"object.type": linked_activity["type"]}},
+                                {"range": {"published": {"gte": since}}},
+                            ]
+                        }
                     }
-                }
-                should.append(should_item)
-                should_item = {
-                    "bool": {
-                        "must": [
-                            {"term": {"target.id": linked_activity["id"]}},
-                            {"term": {"target.type": linked_activity["type"]}},
-                            {"range": {"published": {"gte": since}}},
-                        ]
+                )
+                should.append(
+                    {
+                        "bool": {
+                            "must": [
+                                {"term": {"target.id": linked_activity["id"]}},
+                                {"term": {"target.type": linked_activity["type"]}},
+                                {"range": {"published": {"gte": since}}},
+                            ]
+                        }
                     }
-                }
-                should.append(should_item)
+                )
+        return should
+
+    def _actor_weights(self):
+        """
+        Builds a list of ``{"id": ..., "weight": ...}`` for every "actor" link in the network. Used by
+        aggregators that rank by connection weight.
+        :return: List of dicts
+        """
+        weights = []
+        for link in self.network_array:
+            if link["linked_activity"]["activity_class"] == "actor":
+                weights.append(
+                    {
+                        "id": link["linked_activity"]["id"],
+                        "weight": link["link_weight"],
+                    }
+                )
+        return weights
+
+    def set_query_dict(self):
+        """
+        Setup the query section of the ES dict that will search for activities in the feed index
+        """
+        should = self._network_should_clauses()
         if len(should) > 0:
             self.query_dict = {
                 "query": {"bool": {"should": should}},

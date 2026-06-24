@@ -1,5 +1,4 @@
 from .base import BaseAggregator
-import pprint
 
 
 class DateWeightAggregator(BaseAggregator):
@@ -37,12 +36,7 @@ class DateWeightAggregator(BaseAggregator):
 
     def set_aggregation_section(self):
         # Get the weights from the network
-        weights = []
-        for link in self.network_array:
-            if link["linked_activity"]["activity_class"] == "actor":
-                weights.append(
-                    {"id": link["linked_activity"]["id"], "weight": link["link_weight"]}
-                )
+        weights = self._actor_weights()
         self.query_dict["size"] = 0
         self.query_dict["aggs"] = {
             "dates": {

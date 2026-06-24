@@ -1,5 +1,4 @@
 from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import RequestError
 from elasticfeeds.exceptions import (
     LinkObjectError,
     LinkExistError,
@@ -7,6 +6,7 @@ from elasticfeeds.exceptions import (
     AggregatorObjectError,
     MaxLinkError,
     LinkNotExistError,
+    ElasticFeedConnectionError,
 )
 from elasticfeeds.network import Link, LinkedActivity
 from elasticfeeds.activity import Activity
@@ -17,7 +17,12 @@ import datetime
 __all__ = ["Manager"]
 
 
-def _get_feed_index_definition(number_of_shards, number_of_replicas):
+def _get_feed_index_definition(
+    number_of_shards,
+    number_of_replicas,
+    embedding_dims=None,
+    embedding_similarity="cosine",
+):
     """
     Constructs the Feed index with a given number of shards and replicas. Feeds are stored in an atomic form and
        are based as much as possible on http://activitystrea.ms/
@@ -94,6 +99,7 @@ def _get_feed_index_definition(number_of_shards, number_of_replicas):
                 "published_time": {"type": "date", "format": "HH:mm:ss"},
                 "published_year": {"type": "integer"},
                 "published_month": {"type": "integer"},
+                "feed_id": {"type": "keyword"},
                 "type": {"type": "keyword"},
                 "actor": {
                     "properties": {
@@ -127,6 +133,15 @@ def _get_feed_index_definition(number_of_shards, number_of_replicas):
             }
         },
     }
+    if embedding_dims is not None:
+        # Opt-in dense vector used by the SemanticAggregator for kNN search. Only added when the caller
+        # configures embedding_dims, so existing indices and users are unaffected.
+        _json["mappings"]["properties"]["embedding"] = {
+            "type": "dense_vector",
+            "dims": embedding_dims,
+            "index": True,
+            "similarity": embedding_similarity,
+        }
     return _json
 
 
@@ -197,7 +212,7 @@ class Manager(object):
     def create_connection(self):
         """
         Creates a connection to ElasticSearch and pings it.
-        :return: A tested (pinged) connection to ElasticSearch
+        :return: A tested (pinged) connection to ElasticSearch or None if the ping fails
         """
         if not isinstance(self.port, int):
             raise ValueError("Port must be an integer")
@@ -208,13 +223,14 @@ class Manager(object):
                 raise ValueError("URL prefix must be string")
         if not isinstance(self.use_ssl, bool):
             raise ValueError("Use SSL must be boolean")
-        cnt_params = {"host": self.host, "port": self.port, "scheme": self.scheme}
+        # In the 8.x/9.x client SSL is derived from the scheme. ``use_ssl`` is kept
+        # for backwards compatibility and simply forces the https scheme.
+        scheme = "https" if self.use_ssl else self.scheme
+        node = {"host": self.host, "port": self.port, "scheme": scheme}
         if self.url_prefix is not None:
-            cnt_params["url_prefix"] = self.url_prefix
-        if self.use_ssl:
-            cnt_params["use_ssl"] = self.use_ssl
+            node["path_prefix"] = self.url_prefix
         connection = Elasticsearch(
-            hosts=[cnt_params],
+            hosts=[node],
             basic_auth=(self.user_name, self.user_password),
             max_retries=100,
             retry_on_timeout=True,
@@ -242,6 +258,8 @@ class Manager(object):
         number_of_replicas_in_network=1,
         delete_feeds_if_exists=False,
         delete_network_if_exists=False,
+        embedding_dims=None,
+        embedding_similarity="cosine",
         max_link_size=1000,
     ):
         """
@@ -260,6 +278,11 @@ class Manager(object):
         :param number_of_replicas_in_network: Number of replicas for the network index. 1 by default
         :param delete_feeds_if_exists: Delete the feeds index if already exist. False by default
         :param delete_network_if_exists: Delete the network index if already exist. False by default
+        :param embedding_dims: Optional integer. When set, the feed index gets a ``dense_vector`` "embedding"
+                               field of this dimensionality, enabling the SemanticAggregator (kNN). None by
+                               default (no vector field, fully backwards compatible).
+        :param embedding_similarity: Similarity metric for the embedding field ("cosine", "dot_product",
+                                     "l2_norm"). "cosine" by default. Only used when embedding_dims is set.
         :param max_link_size: Maximum number of links to fetch from an actor
         """
         self.host = host
@@ -273,62 +296,57 @@ class Manager(object):
         self.network_index = network_index
         self._max_link_size = max_link_size
 
-        connection = self.create_connection()
-        if connection is not None:
-            if not connection.indices.exists(index=feed_index):
-                try:
-                    connection.indices.create(
-                        index=feed_index,
-                        body=_get_feed_index_definition(
-                            number_of_shards_in_feeds, number_of_replicas_in_feeds
-                        ),
-                    )
-                except RequestError as e:
-                    if e.status_code == 400:
-                        if e.error.find("already_exists") >= 0:
-                            if delete_feeds_if_exists:
-                                self.delete_feeds_index()
-                                connection.indices.create(
-                                    index=feed_index,
-                                    body=_get_feed_index_definition(
-                                        number_of_shards_in_feeds,
-                                        number_of_replicas_in_feeds,
-                                    ),
-                                )
-                            else:
-                                pass
-                        else:
-                            raise e
-                    else:
-                        raise e
-            if not connection.indices.exists(index=network_index):
-                try:
-                    connection.indices.create(
-                        index=network_index,
-                        body=_get_network_index_definition(
-                            number_of_shards_in_network, number_of_replicas_in_network
-                        ),
-                    )
-                except RequestError as e:
-                    if e.status_code == 400:
-                        if e.error.find("already_exists") >= 0:
-                            if delete_network_if_exists:
-                                self.delete_network_index()
-                                connection.indices.create(
-                                    index=network_index,
-                                    body=_get_network_index_definition(
-                                        number_of_shards_in_network,
-                                        number_of_replicas_in_network,
-                                    ),
-                                )
-                            else:
-                                pass
-                        else:
-                            raise e
-                    else:
-                        raise e
-        else:
-            raise RequestError("Cannot connect to ElasticSearch")
+        # A single, long-lived connection is created here and reused for every
+        # operation. The ElasticSearch client maintains its own connection pool
+        # and is safe to share, so re-creating it per call is wasteful.
+        self._connection = self.create_connection()
+        if self._connection is None:
+            raise ElasticFeedConnectionError()
+
+        self._ensure_index(
+            feed_index,
+            _get_feed_index_definition(
+                number_of_shards_in_feeds,
+                number_of_replicas_in_feeds,
+                embedding_dims=embedding_dims,
+                embedding_similarity=embedding_similarity,
+            ),
+            delete_feeds_if_exists,
+        )
+        self._ensure_index(
+            network_index,
+            _get_network_index_definition(
+                number_of_shards_in_network, number_of_replicas_in_network
+            ),
+            delete_network_if_exists,
+        )
+
+    def _ensure_index(self, index_name, definition, delete_if_exists):
+        """
+        Creates an index from its definition if it does not exist. If it exists and ``delete_if_exists`` is True
+        the index is dropped and recreated.
+        :param index_name: Name of the index
+        :param definition: Dict with "settings" and "mappings" sections
+        :param delete_if_exists: Whether to drop and recreate an existing index
+        """
+        if self._connection.indices.exists(index=index_name):
+            if delete_if_exists:
+                self._connection.indices.delete(index=index_name)
+            else:
+                return
+        self._connection.indices.create(
+            index=index_name,
+            settings=definition["settings"],
+            mappings=definition["mappings"],
+        )
+
+    @property
+    def connection(self):
+        """
+        The shared ElasticSearch connection used by this manager.
+        :return: ES connection
+        """
+        return self._connection
 
     @property
     def max_link_size(self):
@@ -349,24 +367,16 @@ class Manager(object):
         Deletes the feed index
         :return: True if the index was deleted successfully
         """
-        connection = self.create_connection()
-        if connection is not None:
-            connection.indices.delete(self.feed_index)
-            return True
-        return False
+        self._connection.indices.delete(index=self.feed_index)
+        return True
 
-    def delete_network_index(
-        self,
-    ):
+    def delete_network_index(self):
         """
         Deleted the network index
         :return: True if the index was deleted successfully
         """
-        connection = self.create_connection()
-        if connection is not None:
-            connection.indices.delete(self.network_index)
-            return True
-        return False
+        self._connection.indices.delete(index=self.network_index)
+        return True
 
     def link_network_exists(self, link_object):
         """
@@ -376,15 +386,11 @@ class Manager(object):
         """
         if not isinstance(link_object, Link):
             raise LinkObjectError()
-        connection = self.create_connection()
-        if connection is not None:
-            res = connection.search(
-                index=self.network_index, body=link_object.get_search_dict()
-            )
-            if res["hits"]["total"]["value"] > 0:
-                return True
-        else:
-            raise RequestError("Cannot connect to ElasticSearch")
+        res = self._connection.search(
+            index=self.network_index, body=link_object.get_search_dict()
+        )
+        if res["hits"]["total"]["value"] > 0:
+            return True
         return False
 
     def add_network_link(self, link_object):
@@ -396,17 +402,13 @@ class Manager(object):
         if not isinstance(link_object, Link):
             raise LinkObjectError()
         if not self.link_network_exists(link_object):
-            connection = self.create_connection()
-            if connection is not None:
-                unique_id = str(uuid.uuid4())
-                connection.index(
-                    index=self.network_index,
-                    id=unique_id,
-                    body=link_object.get_dict(),
-                )
-                return unique_id
-            else:
-                raise RequestError("Cannot connect to ElasticSearch")
+            unique_id = str(uuid.uuid4())
+            self._connection.index(
+                index=self.network_index,
+                id=unique_id,
+                document=link_object.get_dict(),
+            )
+            return unique_id
         else:
             raise LinkExistError()
 
@@ -419,15 +421,11 @@ class Manager(object):
         if not isinstance(link_object, Link):
             raise LinkObjectError()
         if self.link_network_exists(link_object):
-            connection = self.create_connection()
-            if connection is not None:
-                connection.delete_by_query(
-                    index=self.network_index,
-                    body=link_object.get_search_dict(),
-                )
-                return True
-            else:
-                raise RequestError("Cannot connect to ElasticSearch")
+            self._connection.delete_by_query(
+                index=self.network_index,
+                body=link_object.get_search_dict(),
+            )
+            return True
         else:
             raise LinkNotExistError()
 
@@ -435,14 +433,14 @@ class Manager(object):
         self,
         actor_id,
         following,
-        linked=datetime.datetime.now(),
+        linked=None,
         activity_type="person",
     ):
         """
         A convenience function to declare a follow link
         :param actor_id:  Actor ID who's link is being declared in the network
         :param following: The person that is being followed
-        :param linked: Datetime of the link
+        :param linked: Datetime of the link. Defaults to the current date and time.
         :param activity_type: String. Single word. The type of feed component that is being followed or watched.
                               For example, if the class is "actor" then it's type could be "Person", "User" or "Member".
                               If the class is "object" then its type could be "Document", or "Project".
@@ -452,24 +450,26 @@ class Manager(object):
         a_link = Link(actor_id, a_linked_activity, linked=linked)
         self.add_network_link(a_link)
 
-    def un_follow(self, actor_id, following):
+    def un_follow(self, actor_id, following, activity_type="person"):
         """
         A convenience function to un-follow a person
         :param actor_id:  Actor ID who's link is being declared in the network
         :param following: The person that is being un-followed
+        :param activity_type: String. Single word. Must match the ``activity_type`` used when following, otherwise
+                              the link will not be found. "person" by default.
         :return: Bool
         """
-        a_linked_activity = LinkedActivity(following)
+        a_linked_activity = LinkedActivity(following, activity_type=activity_type)
         a_link = Link(actor_id, a_linked_activity)
         return self.remove_network_link(a_link)
 
-    def watch(self, actor_id, watch_id, watch_type, linked=datetime.datetime.now()):
+    def watch(self, actor_id, watch_id, watch_type, linked=None):
         """
         A convenience function to declare a watch link
         :param actor_id: Actor ID who's link is being declared in the network
         :param watch_id: The object that is being watched
         :param watch_type: The object type that is being watched
-        :param linked: Datetime of the link
+        :param linked: Datetime of the link. Defaults to the current date and time.
         :return: None
         """
         a_linked_activity = LinkedActivity(watch_id, "object", watch_type)
@@ -496,17 +496,17 @@ class Manager(object):
         """
         if not isinstance(activity_object, Activity):
             raise ActivityObjectError()
-        connection = self.create_connection()
-        if connection is not None:
-            unique_id = str(uuid.uuid4())
-            connection.index(
-                index=self.feed_index,
-                id=unique_id,
-                body=activity_object.get_dict(),
-            )
-            return unique_id
-        else:
-            raise RequestError("Cannot connect to ElasticSearch")
+        unique_id = str(uuid.uuid4())
+        document = activity_object.get_dict()
+        # Store the id inside the document too so it can be used as a stable tie-breaker for
+        # cursor (search_after) pagination without relying on _id fielddata.
+        document["feed_id"] = unique_id
+        self._connection.index(
+            index=self.feed_index,
+            id=unique_id,
+            document=document,
+        )
+        return unique_id
 
     def get_search_dict(self, actor_id):
         """
@@ -527,17 +527,13 @@ class Manager(object):
         :return: Dict array
         """
         result = []
-        connection = self.create_connection()
-        if connection is not None:
-            es_result = connection.search(
-                index=self.network_index, body=self.get_search_dict(actor_id)
-            )
-            if es_result["hits"]["total"]["value"] > 0:
-                for hit in es_result["hits"]["hits"]:
-                    result.append(hit["_source"])
-            return result
-        else:
-            raise RequestError("Cannot connect to ElasticSearch")
+        es_result = self._connection.search(
+            index=self.network_index, body=self.get_search_dict(actor_id)
+        )
+        if es_result["hits"]["total"]["value"] > 0:
+            for hit in es_result["hits"]["hits"]:
+                result.append(hit["_source"])
+        return result
 
     def get_feeds(self, aggregator):
         """
@@ -547,33 +543,19 @@ class Manager(object):
         """
         if not isinstance(aggregator, BaseAggregator):
             raise AggregatorObjectError()
-        connection = self.create_connection()
-        if connection is not None:
-            aggregator.connection = connection
-            aggregator.feed_index = self.feed_index
-            aggregator.network_array = self.get_network(aggregator.actor_id)
-            aggregator.set_query_dict()
-            if aggregator.query_dict is not None:
-                aggregator.set_aggregation_section()
-                aggregator.query_feeds()
-                return aggregator.get_feeds()
-            else:
-                return []
+        aggregator.connection = self._connection
+        aggregator.feed_index = self.feed_index
+        aggregator.network_array = self.get_network(aggregator.actor_id)
+        aggregator.set_query_dict()
+        if aggregator.query_dict is not None:
+            aggregator.set_aggregation_section()
+            aggregator.query_feeds()
+            return aggregator.get_feeds()
         else:
-            raise RequestError("Cannot connect to ElasticSearch")
+            return []
 
     def execute_raw_network_query(self, query_dict):
-        connection = self.create_connection()
-        if connection is not None:
-            es_result = connection.search(index=self.network_index, body=query_dict)
-            return es_result
-        else:
-            raise RequestError("Cannot connect to ElasticSearch")
+        return self._connection.search(index=self.network_index, body=query_dict)
 
     def execute_raw_feeds_query(self, query_dict):
-        connection = self.create_connection()
-        if connection is not None:
-            es_result = connection.search(index=self.feed_index, body=query_dict)
-            return es_result
-        else:
-            raise RequestError("Cannot connect to ElasticSearch")
+        return self._connection.search(index=self.feed_index, body=query_dict)

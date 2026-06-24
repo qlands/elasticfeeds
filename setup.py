@@ -8,20 +8,17 @@ with open(os.path.join(here, "README.md")) as f:
 with open(os.path.join(here, "CHANGELOG.rst")) as f:
     CHANGES = f.read()
 
+# Runtime dependencies only. Test/dev tools live in extras_require below so that
+# library consumers are not forced to install them.
 requires = [
-    "elasticsearch",
-    "coverage",
-    "pytest",
-    "pytest-cov",
-    "black",
-    "requests",
+    "elasticsearch>=9.2,<10",
 ]
 
-tests_require = ["pytest", "pytest-cov"]
+tests_require = ["pytest", "pytest-cov", "coverage", "requests"]
 
 setup(
     name="elasticfeeds",
-    version="1.0.0",
+    version="1.1.0",
     description="ElasticFeeds",
     long_description=README + "\n\n" + CHANGES,
     classifiers=[
@@ -38,6 +35,6 @@ setup(
     package_data={"": ["README.md", "LICENSE.txt"]},
     package_dir={"elasticfeeds": "elasticfeeds"},
     zip_safe=False,
-    extras_require={"testing": tests_require},
+    extras_require={"testing": tests_require, "dev": ["black"]},
     install_requires=requires,
 )

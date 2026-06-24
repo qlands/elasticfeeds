@@ -22,7 +22,7 @@ class Link(object):
         self,
         actor_id,
         linked_activity,
-        linked=datetime.datetime.now(),
+        linked=None,
         link_type="follow",
         link_weight=1,
         extra=None,
@@ -42,8 +42,10 @@ class Link(object):
             self._actor_id = actor_id
         else:
             raise IDError()
+        if linked is None:
+            linked = datetime.datetime.now()
         if not isinstance(linked, datetime.datetime):
-            raise LinkedTypeError
+            raise LinkedTypeError()
         self._linked = linked
         if not link_type.isalpha():
             raise KeyWordError(link_type)

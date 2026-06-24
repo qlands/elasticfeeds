@@ -1,15 +1,26 @@
-version: '2.2'
+# Single-node ElasticSearch 9.2.1 for local development and running the test suite.
+#
+# Security is enabled (the 8.x/9.x default) but TLS on the HTTP layer is turned
+# off so the library can talk to it over plain http with basic auth, matching
+# the pytest setup (ES_USER / ES_PASS).
+#
+# Usage:
+#   export ES_PASS="my_es_password"
+#   docker compose up -d
+#   # user name is "elastic"
 services:
   es01:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
-    container_name: es01
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.1
+    container_name: ef-es01
     environment:
       - node.name=es01
-      - cluster.name=es-docker-cluster
-      - discovery.seed_hosts=es02,es03
-      - cluster.initial_master_nodes=es01,es02,es03
+      - discovery.type=single-node
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - ELASTIC_PASSWORD=${ES_PASS:-changeme}
+      - xpack.security.enabled=true
+      - xpack.security.http.ssl.enabled=false
+      - xpack.license.self_generated.type=basic
     ulimits:
       memlock:
         soft: -1
@@ -20,49 +31,9 @@ services:
       - 9200:9200
     networks:
       - elastic
-  es02:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
-    container_name: es02
-    environment:
-      - node.name=es02
-      - cluster.name=es-docker-cluster
-      - discovery.seed_hosts=es01,es03
-      - cluster.initial_master_nodes=es01,es02,es03
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - data02:/usr/share/elasticsearch/data
-    networks:
-      - elastic
-  es03:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.0
-    container_name: es03
-    environment:
-      - node.name=es03
-      - cluster.name=es-docker-cluster
-      - discovery.seed_hosts=es01,es02
-      - cluster.initial_master_nodes=es01,es02,es03
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-    volumes:
-      - data03:/usr/share/elasticsearch/data
-    networks:
-      - elastic
 
 volumes:
   data01:
-    driver: local
-  data02:
-    driver: local
-  data03:
     driver: local
 
 networks:

@@ -10,6 +10,7 @@ from elasticfeeds.exceptions import (
     ExtraTypeError,
     PublishedTypeError,
     KeyWordError,
+    EmbeddingTypeError,
 )
 import datetime
 
@@ -27,10 +28,11 @@ class Activity(object):
         activity_type,
         activity_actor,
         activity_object,
-        published=datetime.datetime.now(),
+        published=None,
         activity_origin=None,
         activity_target=None,
         extra=None,
+        embedding=None,
     ):
         """
         Initialize the Activity
@@ -53,6 +55,10 @@ class Activity(object):
         :param extra: Use this dict to store extra information at activity level.
                       IMPORTANT NOTE: This dict is "non-analyzable" which means that ES does not perform any
                       operations on it thus it cannot be used to order, aggregate, or filter query results.
+        :param embedding: Optional list of numbers (a dense vector) describing this activity, supplied by your
+                          own embedding model. When provided it is stored in the ``embedding`` field of the feed
+                          index and can be used by the SemanticAggregator for kNN ("more like this") feeds. The
+                          feed index must have been created with ``embedding_dims`` set on the Manager.
         """
         if not isinstance(activity_actor, Actor):
             raise ActorObjectError()
@@ -72,6 +78,9 @@ class Activity(object):
             if not isinstance(extra, dict):
                 raise ExtraTypeError()
         self._extra = extra
+        self._embedding = self._validate_embedding(embedding)
+        if published is None:
+            published = datetime.datetime.now()
         if not isinstance(published, datetime.datetime):
             raise PublishedTypeError()
         self._published = published
@@ -189,21 +198,40 @@ class Activity(object):
                 raise ExtraTypeError()
         self._extra = value
 
+    @staticmethod
+    def _validate_embedding(value):
+        if value is None:
+            return None
+        if not isinstance(value, (list, tuple)) or not all(
+            isinstance(item, (int, float)) and not isinstance(item, bool)
+            for item in value
+        ):
+            raise EmbeddingTypeError()
+        return list(value)
+
+    @property
+    def embedding(self):
+        """
+        Optional dense vector (list of numbers) describing this activity, used by the SemanticAggregator.
+        :return: List or None
+        """
+        return self._embedding
+
+    @embedding.setter
+    def embedding(self, value):
+        self._embedding = self._validate_embedding(value)
+
     def get_dict(self):
         """
-        Creates a dict based on the activity definition
+        Creates a dict based on the activity definition. The ``published`` date provided when the activity was
+        created (or ``now`` if none was provided) is honoured here, which allows back-dating or importing
+        historical activities.
         :return: Dict
         """
-        self.published = datetime.datetime.now()
-        iso_date = datetime.datetime.now().isoformat()
-        array = iso_date.split("T")
-        date = array[0]
-        array = array[1].split(".")
-        time = array[0]
         _dict = {
-            "published": iso_date,
-            "published_date": date,
-            "published_time": time,
+            "published": self.published.isoformat(),
+            "published_date": self.published.strftime("%Y-%m-%d"),
+            "published_time": self.published.strftime("%H:%M:%S"),
             "published_year": self.published.year,
             "published_month": self.published.month,
             "actor": self.activity_actor.get_dict(),
@@ -216,4 +244,6 @@ class Activity(object):
             _dict["target"] = self.activity_target.get_dict()
         if self.extra is not None:
             _dict["extra"] = self.extra
+        if self.embedding is not None:
+            _dict["embedding"] = self.embedding
         return _dict
