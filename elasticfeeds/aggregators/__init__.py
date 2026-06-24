@@ -6,3 +6,8 @@ from .recentobjecttype import *
 from .dateweight import *
 from .yearmonthtype import *
 from .yearmonth import *
+from .notification import NotificationAggregator
+from .decayranked import DecayRankedAggregator
+from .cursor import CursorAggregator
+from .collapse import CollapseAggregator
+from .semantic import SemanticAggregator
